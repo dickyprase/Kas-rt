@@ -1,6 +1,7 @@
 import { getSession } from '@/lib/session';
 import { redirect } from 'next/navigation';
 import db from '@/lib/db';
+import { initDatabase } from '@/lib/db-init';
 import AdminClient from './AdminClient';
 
 export const dynamic = 'force-dynamic';
@@ -8,6 +9,8 @@ export const dynamic = 'force-dynamic';
 export default async function AdminPage({ searchParams }: { searchParams: Promise<{ page?: string; kas_type?: string }> }) {
   const session = await getSession();
   if (!session.isLoggedIn) redirect('/login');
+
+  await initDatabase();
 
   const params = await searchParams;
   const page = parseInt(params.page || '1', 10);
@@ -17,6 +20,19 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
 
   let total: number;
   let transactions: any[];
+
+  // Fetch telegram_chat_id
+  let telegramChatId = '584847845';
+  try {
+    const { rows } = await db.query(
+      "SELECT value FROM settings WHERE key = 'telegram_chat_id'"
+    );
+    if (rows.length > 0) {
+      telegramChatId = rows[0].value;
+    }
+  } catch {
+    // use default
+  }
 
   if (kasTypeFilter && (kasTypeFilter === 'biasa' || kasTypeFilter === 'koperasi')) {
     total = (await db.query('SELECT COUNT(*) as count FROM transactions WHERE kas_type=$1', [kasTypeFilter])).rows[0].count;
@@ -34,6 +50,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
         total={total}
         username={session.username || ''}
         kasTypeFilter={kasTypeFilter}
+        telegramChatId={telegramChatId}
       />
     );
   }
@@ -53,6 +70,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
       total={total}
       username={session.username || ''}
       kasTypeFilter={kasTypeFilter}
+      telegramChatId={telegramChatId}
     />
   );
 }

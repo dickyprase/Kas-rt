@@ -13,7 +13,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Separator } from '@/components/ui/separator';
-import { Plus, MoreHorizontal, Pencil, Trash2, LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, MoreHorizontal, Pencil, Trash2, LogOut, ChevronLeft, ChevronRight, Download, Settings, Save, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 function formatCurrency(amount: number): string {
   return new Intl.NumberFormat('id-ID', {
@@ -41,6 +42,7 @@ export default function AdminClient({
   total,
   username,
   kasTypeFilter,
+  telegramChatId,
 }: {
   transactions: Transaction[];
   page: number;
@@ -48,6 +50,7 @@ export default function AdminClient({
   total: number;
   username: string;
   kasTypeFilter: string;
+  telegramChatId: string;
 }) {
   const router = useRouter();
   const [kasType, setKasType] = useState<'biasa' | 'koperasi'>('biasa');
@@ -58,6 +61,12 @@ export default function AdminClient({
   const [loading, setLoading] = useState(false);
   const [filterType, setFilterType] = useState(kasTypeFilter);
   const [deleteId, setDeleteId] = useState<number | null>(null);
+
+  // Backup & Settings state
+  const [backupLoading, setBackupLoading] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [chatId, setChatId] = useState(telegramChatId);
+  const [savingSettings, setSavingSettings] = useState(false);
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
@@ -99,6 +108,44 @@ export default function AdminClient({
     params.set('page', String(p));
     if (filterType) params.set('kas_type', filterType);
     return `/admin?${params.toString()}`;
+  }
+
+  async function handleBackup() {
+    setBackupLoading(true);
+    try {
+      const res = await fetch('/api/backup', { method: 'POST' });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success('Backup berhasil! File Excel sudah dikirim ke Telegram.');
+      } else {
+        toast.error(`Backup gagal: ${data.error || 'Unknown error'}`);
+      }
+    } catch (err) {
+      toast.error('Backup gagal: Network error');
+    } finally {
+      setBackupLoading(false);
+    }
+  }
+
+  async function handleSaveSettings() {
+    setSavingSettings(true);
+    try {
+      const res = await fetch('/api/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ telegram_chat_id: chatId }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success('Pengaturan berhasil disimpan!');
+      } else {
+        toast.error(`Gagal menyimpan: ${data.error || 'Unknown error'}`);
+      }
+    } catch (err) {
+      toast.error('Gagal menyimpan: Network error');
+    } finally {
+      setSavingSettings(false);
+    }
   }
 
   return (
@@ -310,6 +357,84 @@ export default function AdminClient({
                 </Button>
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        {/* Backup & Settings */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Settings className="size-4" />
+              Backup & Pengaturan
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Backup Button */}
+            <div className="flex items-center gap-4">
+              <Button
+                onClick={handleBackup}
+                disabled={backupLoading}
+                className="gap-2"
+              >
+                {backupLoading ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Download className="size-4" />
+                )}
+                {backupLoading ? 'Mengirim Backup...' : 'Backup ke Telegram'}
+              </Button>
+              <span className="text-sm text-muted-foreground">
+                Kirim file Excel ke Telegram
+              </span>
+            </div>
+
+            <Separator />
+
+            {/* Settings Section */}
+            <div className="space-y-3">
+              <Button
+                variant="ghost"
+                className="gap-2 p-0 h-auto font-medium"
+                onClick={() => setSettingsOpen(!settingsOpen)}
+              >
+                <Settings className="size-4" />
+                Pengaturan Telegram
+                <span className="text-xs text-muted-foreground">
+                  {settingsOpen ? '▲' : '▼'}
+                </span>
+              </Button>
+
+              {settingsOpen && (
+                <div className="space-y-3 rounded-lg border p-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="chatId">Telegram Chat ID</Label>
+                    <Input
+                      id="chatId"
+                      type="text"
+                      placeholder="584847845"
+                      value={chatId}
+                      onChange={(e) => setChatId(e.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Chat ID untuk menerima file backup Excel
+                    </p>
+                  </div>
+                  <Button
+                    onClick={handleSaveSettings}
+                    disabled={savingSettings}
+                    size="sm"
+                    className="gap-2"
+                  >
+                    {savingSettings ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : (
+                      <Save className="size-4" />
+                    )}
+                    {savingSettings ? 'Menyimpan...' : 'Simpan Pengaturan'}
+                  </Button>
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
 
