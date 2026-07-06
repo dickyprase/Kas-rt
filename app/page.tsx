@@ -77,12 +77,12 @@ export default async function PublicPage() {
       <div className="mx-auto max-w-3xl space-y-8 p-4 py-8 md:p-8">
         {/* Hero */}
         <div className="space-y-2 text-center">
-          <h1 className="text-4xl font-bold tracking-tight md:text-5xl">
+          <h1 className="text-5xl font-bold tracking-tight md:text-6xl">
             📊 {appName}
           </h1>
-          <p className="text-lg text-muted-foreground">Dashboard Keuangan</p>
+          <p className="text-2xl text-muted-foreground">Dashboard Keuangan</p>
           <div className="flex items-center justify-center gap-1.5">
-            <Activity className="size-4 text-emerald-500 animate-pulse" />
+            <Activity className="size-5 text-emerald-500 animate-pulse" />
             <span className="text-sm text-muted-foreground">Live</span>
           </div>
         </div>
@@ -98,9 +98,9 @@ export default async function PublicPage() {
             </CardHeader>
             <CardContent className="space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-base text-muted-foreground">Saldo</span>
+                <span className="text-xl text-muted-foreground">Saldo</span>
                 <span
-                  className={`text-2xl font-bold tabular-nums ${
+                  className={`text-3xl font-bold tabular-nums ${
                     biasa.saldo >= 0 ? 'text-emerald-600' : 'text-rose-600'
                   }`}
                 >
@@ -109,20 +109,20 @@ export default async function PublicPage() {
               </div>
               <Separator />
               <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1.5 text-base text-muted-foreground">
-                  <TrendingUp className="size-4 text-emerald-500" />
+                <span className="flex items-center gap-1.5 text-xl text-muted-foreground">
+                  <TrendingUp className="size-5 text-emerald-500" />
                   Pemasukan
                 </span>
-                <span className="text-lg font-bold tabular-nums text-emerald-600">
+                <span className="text-xl font-bold tabular-nums text-emerald-600">
                   +{formatCurrency(biasa.pemasukan)}
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1.5 text-base text-muted-foreground">
-                  <TrendingDown className="size-4 text-rose-500" />
+                <span className="flex items-center gap-1.5 text-xl text-muted-foreground">
+                  <TrendingDown className="size-5 text-rose-500" />
                   Pengeluaran
                 </span>
-                <span className="text-lg font-bold tabular-nums text-rose-600">
+                <span className="text-xl font-bold tabular-nums text-rose-600">
                   -{formatCurrency(biasa.pengeluaran)}
                 </span>
               </div>
@@ -136,9 +136,9 @@ export default async function PublicPage() {
             </CardHeader>
             <CardContent className="space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-base text-muted-foreground">Saldo</span>
+                <span className="text-xl text-muted-foreground">Saldo</span>
                 <span
-                  className={`text-2xl font-bold tabular-nums ${
+                  className={`text-3xl font-bold tabular-nums ${
                     koperasi.saldo >= 0 ? 'text-emerald-600' : 'text-rose-600'
                   }`}
                 >
@@ -147,20 +147,20 @@ export default async function PublicPage() {
               </div>
               <Separator />
               <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1.5 text-base text-muted-foreground">
-                  <TrendingUp className="size-4 text-emerald-500" />
+                <span className="flex items-center gap-1.5 text-xl text-muted-foreground">
+                  <TrendingUp className="size-5 text-emerald-500" />
                   Pemasukan
                 </span>
-                <span className="text-lg font-bold tabular-nums text-emerald-600">
+                <span className="text-xl font-bold tabular-nums text-emerald-600">
                   +{formatCurrency(koperasi.pemasukan)}
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1.5 text-base text-muted-foreground">
-                  <TrendingDown className="size-4 text-rose-500" />
+                <span className="flex items-center gap-1.5 text-xl text-muted-foreground">
+                  <TrendingDown className="size-5 text-rose-500" />
                   Pengeluaran
                 </span>
-                <span className="text-lg font-bold tabular-nums text-rose-600">
+                <span className="text-xl font-bold tabular-nums text-rose-600">
                   -{formatCurrency(koperasi.pengeluaran)}
                 </span>
               </div>
@@ -171,7 +171,7 @@ export default async function PublicPage() {
         {/* Recent Transactions */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-xl">5 Transaksi Terbaru</CardTitle>
+            <CardTitle className="text-2xl">5 Transaksi Terbaru</CardTitle>
           </CardHeader>
           <CardContent>
             {recentTransactions.length === 0 ? (
@@ -191,7 +191,7 @@ export default async function PublicPage() {
                 <TableBody>
                   {recentTransactions.map((t: any) => (
                     <TableRow key={t.id}>
-                      <TableCell className="font-medium text-base">
+                      <TableCell className="font-medium text-lg">
                         {t.description}
                       </TableCell>
                       <TableCell>
@@ -203,7 +203,7 @@ export default async function PublicPage() {
                           {t.kas_type === 'koperasi' ? '🏦 Koperasi' : '🪙 Biasa'}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-base text-muted-foreground">
+                      <TableCell className="text-xl text-muted-foreground">
                         {format(new Date(t.trans_date), "dd MMM yyyy", { locale: localeId })}
                       </TableCell>
                       <TableCell className="text-right">
@@ -227,7 +227,7 @@ export default async function PublicPage() {
         </Card>
 
         {/* Footer */}
-        <div className="text-center text-base text-muted-foreground">
+        <div className="text-center text-xl text-muted-foreground">
           <p>
             © {now.getFullYear()} {appName} ·{' '}
             <Link

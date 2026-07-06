@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -198,17 +199,18 @@ export default function TransaksiForm({ kasType }: TransaksiFormProps) {
             />
 
             {/* Jumlah, Keterangan, Tanggal */}
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div className="space-y-5">
               <FormField
                 control={form.control}
                 name="jumlah"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Jumlah</FormLabel>
+                    <FormLabel className="text-base">Jumlah (Rp)</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
                         placeholder="0"
+                        className="h-12 text-lg"
                         {...field}
                         value={field.value ?? ''}
                         onChange={(e) =>
@@ -229,11 +231,11 @@ export default function TransaksiForm({ kasType }: TransaksiFormProps) {
                 name="keterangan"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Keterangan</FormLabel>
+                    <FormLabel className="text-base">Keterangan</FormLabel>
                     <FormControl>
-                      <Input
-                        type="text"
+                      <Textarea
                         placeholder="Deskripsi transaksi"
+                        className="min-h-[80px] text-base resize-none"
                         {...field}
                       />
                     </FormControl>
@@ -246,14 +248,14 @@ export default function TransaksiForm({ kasType }: TransaksiFormProps) {
                 name="tanggal"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Tanggal</FormLabel>
+                    <FormLabel className="text-base">Tanggal</FormLabel>
                     <Popover>
                       <PopoverTrigger
                         render={
                           <Button
                             variant="outline"
                             className={cn(
-                              'w-full justify-start text-left font-normal',
+                              'w-full h-12 justify-start text-left font-normal text-base',
                               !field.value && 'text-muted-foreground'
                             )}
                           />
