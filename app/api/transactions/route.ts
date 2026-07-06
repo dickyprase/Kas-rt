@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import db from '@/lib/db';
 import { getSession } from '@/lib/session';
+import { appendTransaction, updateTransactionRow, deleteTransactionRow } from '@/lib/sheets';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,12 +20,25 @@ export async function POST(request: Request) {
 
   const kasType = kas_type || 'biasa';
 
-  await db.query(
-    'INSERT INTO transactions (type, kas_type, amount, description, trans_date) VALUES ($1, $2, $3, $4, $5)',
+  const result = await db.query(
+    'INSERT INTO transactions (type, kas_type, amount, description, trans_date) VALUES ($1, $2, $3, $4, $5) RETURNING *',
     [type, kasType, amount, description, trans_date]
   );
 
-  return NextResponse.json({ success: true });
+  const created = result.rows[0];
+
+  // Sync to Google Sheets
+  await appendTransaction({
+    id: created.id,
+    trans_date: created.trans_date,
+    type: created.type,
+    kas_type: created.kas_type,
+    amount: created.amount,
+    description: created.description,
+    created_at: created.created_at,
+  });
+
+  return NextResponse.json({ success: true, transaction: created });
 }
 
 // PUT - update transaction
@@ -47,6 +61,15 @@ export async function PUT(request: Request) {
     [type, kasType, amount, description, trans_date, id]
   );
 
+  // Sync to Google Sheets
+  await updateTransactionRow(id, {
+    trans_date,
+    type,
+    kas_type: kasType,
+    amount,
+    description,
+  });
+
   return NextResponse.json({ success: true });
 }
 
@@ -65,6 +88,9 @@ export async function DELETE(request: Request) {
   }
 
   await db.query('DELETE FROM transactions WHERE id=$1', [parseInt(id)]);
+
+  // Sync to Google Sheets
+  await deleteTransactionRow(parseInt(id));
 
   return NextResponse.json({ success: true });
 }
