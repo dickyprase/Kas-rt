@@ -126,9 +126,9 @@ export default function TransaksiForm({ kasType }: TransaksiFormProps) {
                         <ToggleGroupItem
                           value="biasa"
                           className={cn(
-                            'flex-1 transition-all',
+                            'flex-1 transition-all aria-pressed:bg-amber-600 data-[state=on]:bg-amber-600',
                             currentJenis === 'biasa'
-                              ? 'bg-amber-600 text-white shadow-md ring-2 ring-amber-300'
+                              ? '!bg-amber-600 text-white shadow-md ring-2 ring-amber-300'
                               : 'bg-amber-50 text-amber-700 hover:bg-amber-100 dark:bg-amber-950/30 dark:text-amber-400'
                           )}
                         >
@@ -137,9 +137,9 @@ export default function TransaksiForm({ kasType }: TransaksiFormProps) {
                         <ToggleGroupItem
                           value="koperasi"
                           className={cn(
-                            'flex-1 transition-all',
+                            'flex-1 transition-all aria-pressed:bg-blue-600 data-[state=on]:bg-blue-600',
                             currentJenis === 'koperasi'
-                              ? 'bg-blue-600 text-white shadow-md ring-2 ring-blue-300'
+                              ? '!bg-blue-600 text-white shadow-md ring-2 ring-blue-300'
                               : 'bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-950/30 dark:text-blue-400'
                           )}
                         >
@@ -171,9 +171,9 @@ export default function TransaksiForm({ kasType }: TransaksiFormProps) {
                       <ToggleGroupItem
                         value="pemasukan"
                         className={cn(
-                          'flex-1 transition-all',
+                          'flex-1 transition-all aria-pressed:bg-emerald-600 data-[state=on]:bg-emerald-600',
                           currentTipe === 'pemasukan'
-                            ? 'bg-emerald-600 text-white shadow-md ring-2 ring-emerald-300'
+                            ? '!bg-emerald-600 text-white shadow-md ring-2 ring-emerald-300'
                             : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:text-emerald-400'
                         )}
                       >
@@ -182,9 +182,9 @@ export default function TransaksiForm({ kasType }: TransaksiFormProps) {
                       <ToggleGroupItem
                         value="pengeluaran"
                         className={cn(
-                          'flex-1 transition-all',
+                          'flex-1 transition-all aria-pressed:bg-rose-600 data-[state=on]:bg-rose-600',
                           currentTipe === 'pengeluaran'
-                            ? 'bg-rose-600 text-white shadow-md ring-2 ring-rose-300'
+                            ? '!bg-rose-600 text-white shadow-md ring-2 ring-rose-300'
                             : 'bg-rose-50 text-rose-700 hover:bg-rose-100 dark:bg-rose-950/30 dark:text-rose-400'
                         )}
                       >
