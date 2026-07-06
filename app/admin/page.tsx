@@ -34,6 +34,42 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
     // use default
   }
 
+  // Fetch stats for the current month
+  const now = new Date();
+  const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  
+  let totalSaldo = 0;
+  let pemasukanBulanIni = 0;
+  let pengeluaranBulanIni = 0;
+  let countPemasukanBulanIni = 0;
+  let countPengeluaranBulanIni = 0;
+
+  try {
+    // Total saldo
+    const saldoResult = await db.query(
+      "SELECT COALESCE(SUM(CASE WHEN type='pemasukan' THEN amount ELSE 0 END), 0) - COALESCE(SUM(CASE WHEN type='pengeluaran' THEN amount ELSE 0 END), 0) as saldo FROM transactions"
+    );
+    totalSaldo = Number(saldoResult.rows[0].saldo) || 0;
+
+    // Pemasukan bulan ini
+    const pemasukanResult = await db.query(
+      "SELECT COALESCE(SUM(amount), 0) as total, COUNT(*) as count FROM transactions WHERE type='pemasukan' AND TO_CHAR(trans_date, 'YYYY-MM') = $1",
+      [currentMonth]
+    );
+    pemasukanBulanIni = Number(pemasukanResult.rows[0].total) || 0;
+    countPemasukanBulanIni = Number(pemasukanResult.rows[0].count) || 0;
+
+    // Pengeluaran bulan ini
+    const pengeluaranResult = await db.query(
+      "SELECT COALESCE(SUM(amount), 0) as total, COUNT(*) as count FROM transactions WHERE type='pengeluaran' AND TO_CHAR(trans_date, 'YYYY-MM') = $1",
+      [currentMonth]
+    );
+    pengeluaranBulanIni = Number(pengeluaranResult.rows[0].total) || 0;
+    countPengeluaranBulanIni = Number(pengeluaranResult.rows[0].count) || 0;
+  } catch (err) {
+    console.error('Failed to fetch stats:', err);
+  }
+
   if (kasTypeFilter && (kasTypeFilter === 'biasa' || kasTypeFilter === 'koperasi')) {
     total = (await db.query('SELECT COUNT(*) as count FROM transactions WHERE kas_type=$1', [kasTypeFilter])).rows[0].count;
     const totalPages = Math.ceil(total / perPage);
@@ -51,6 +87,13 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
         username={session.username || ''}
         kasTypeFilter={kasTypeFilter}
         telegramChatId={telegramChatId}
+        stats={{
+          totalSaldo,
+          pemasukanBulanIni,
+          pengeluaranBulanIni,
+          countPemasukanBulanIni,
+          countPengeluaranBulanIni,
+        }}
       />
     );
   }
@@ -71,6 +114,13 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
       username={session.username || ''}
       kasTypeFilter={kasTypeFilter}
       telegramChatId={telegramChatId}
+      stats={{
+        totalSaldo,
+        pemasukanBulanIni,
+        pengeluaranBulanIni,
+        countPemasukanBulanIni,
+        countPengeluaranBulanIni,
+      }}
     />
   );
 }

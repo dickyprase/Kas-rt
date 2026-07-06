@@ -34,11 +34,13 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import ThemeToggle from '@/app/components/ThemeToggle';
 import {
   LayoutDashboard,
-  Plus,
+  ArrowLeftRight,
   Download,
   Settings,
-  LogOut,
   Home,
+  Coins,
+  LogOut,
+  User,
   Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -51,7 +53,7 @@ const navItems = [
   },
   {
     title: 'Transaksi',
-    icon: Plus,
+    icon: ArrowLeftRight,
     url: '/admin#transaksi',
   },
   {
@@ -71,7 +73,7 @@ const navItems = [
   },
 ];
 
-export default function AdminSidebarLayout({
+export default function AppSidebar({
   children,
   username,
 }: {
@@ -115,8 +117,8 @@ export default function AdminSidebarLayout({
                   size="lg"
                   className="data-[state=open]:bg-sidebar-accent"
                 >
-                  <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground text-lg">
-                    💰
+                  <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                    <Coins className="size-4" />
                   </div>
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-semibold">Kas App</span>

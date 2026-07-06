@@ -1,19 +1,96 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { format } from 'date-fns';
+import { id } from 'date-fns/locale';
+import {
+  useReactTable,
+  getCoreRowModel,
+  flexRender,
+  type ColumnDef,
+} from '@tanstack/react-table';
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Separator } from '@/components/ui/separator';
-import { Plus, MoreHorizontal, Pencil, Trash2, ChevronLeft, ChevronRight, Download, Settings, Save, Loader2 } from 'lucide-react';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import {
+  Plus,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  Settings,
+  Save,
+  Loader2,
+  Wallet,
+  TrendingUp,
+  TrendingDown,
+  Search,
+  Receipt,
+  CalendarIcon,
+} from 'lucide-react';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
+
+// Zod schema for the form
+const formSchema = z.object({
+  jenisKas: z.enum(['biasa', 'koperasi']),
+  tipeTransaksi: z.enum(['pemasukan', 'pengeluaran']),
+  jumlah: z
+    .number()
+    .positive('Jumlah harus lebih dari 0'),
+  keterangan: z.string().min(1, 'Keterangan tidak boleh kosong'),
+  tanggal: z.date(),
+});
+
+type FormValues = z.infer<typeof formSchema>;
 
 function formatCurrency(amount: number): string {
   return new Intl.NumberFormat('id-ID', {
@@ -34,6 +111,14 @@ interface Transaction {
   kas_type: string;
 }
 
+interface Stats {
+  totalSaldo: number;
+  pemasukanBulanIni: number;
+  pengeluaranBulanIni: number;
+  countPemasukanBulanIni: number;
+  countPengeluaranBulanIni: number;
+}
+
 export default function AdminClient({
   transactions,
   page,
@@ -42,6 +127,7 @@ export default function AdminClient({
   username,
   kasTypeFilter,
   telegramChatId,
+  stats,
 }: {
   transactions: Transaction[];
   page: number;
@@ -50,44 +136,73 @@ export default function AdminClient({
   username: string;
   kasTypeFilter: string;
   telegramChatId: string;
+  stats: Stats;
 }) {
   const router = useRouter();
-  const [kasType, setKasType] = useState<'biasa' | 'koperasi'>('biasa');
-  const [type, setType] = useState<'pemasukan' | 'pengeluaran'>('pemasukan');
-  const [amount, setAmount] = useState('');
-  const [description, setDescription] = useState('');
-  const [transDate, setTransDate] = useState(new Date().toISOString().split('T')[0]);
-  const [loading, setLoading] = useState(false);
   const [filterType, setFilterType] = useState(kasTypeFilter);
+  const [searchQuery, setSearchQuery] = useState('');
   const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [loading, setLoading] = useState(false);
 
   // Backup & Settings state
   const [backupLoading, setBackupLoading] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [chatId, setChatId] = useState(telegramChatId);
   const [savingSettings, setSavingSettings] = useState(false);
 
-  async function handleAdd(e: React.FormEvent) {
-    e.preventDefault();
+  // Form
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      jenisKas: 'biasa',
+      tipeTransaksi: 'pemasukan',
+      jumlah: undefined,
+      keterangan: '',
+      tanggal: new Date(),
+    },
+  });
+
+  async function handleAdd(values: FormValues) {
     setLoading(true);
-    const res = await fetch('/api/transactions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type, kas_type: kasType, amount: parseInt(amount), description, trans_date: transDate }),
-    });
-    if (res.ok) {
-      setAmount('');
-      setDescription('');
-      router.refresh();
+    try {
+      const res = await fetch('/api/transactions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: values.tipeTransaksi,
+          kas_type: values.jenisKas,
+          amount: values.jumlah,
+          description: values.keterangan,
+          trans_date: format(values.tanggal, 'yyyy-MM-dd'),
+        }),
+      });
+      if (res.ok) {
+        form.reset({
+          jenisKas: 'biasa',
+          tipeTransaksi: 'pemasukan',
+          jumlah: undefined,
+          keterangan: '',
+          tanggal: new Date(),
+        });
+        toast.success('Transaksi berhasil ditambahkan!');
+        router.refresh();
+      } else {
+        toast.error('Gagal menambahkan transaksi');
+      }
+    } catch {
+      toast.error('Gagal menambahkan transaksi: Network error');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   async function handleDelete(id: number) {
     const res = await fetch(`/api/transactions?id=${id}`, { method: 'DELETE' });
     if (res.ok) {
       setDeleteId(null);
+      toast.success('Transaksi berhasil dihapus!');
       router.refresh();
+    } else {
+      toast.error('Gagal menghapus transaksi');
     }
   }
 
@@ -114,7 +229,7 @@ export default function AdminClient({
       } else {
         toast.error(`Backup gagal: ${data.error || 'Unknown error'}`);
       }
-    } catch (err) {
+    } catch {
       toast.error('Backup gagal: Network error');
     } finally {
       setBackupLoading(false);
@@ -135,16 +250,195 @@ export default function AdminClient({
       } else {
         toast.error(`Gagal menyimpan: ${data.error || 'Unknown error'}`);
       }
-    } catch (err) {
+    } catch {
       toast.error('Gagal menyimpan: Network error');
     } finally {
       setSavingSettings(false);
     }
   }
 
+  // Filter transactions by search query
+  const filteredTransactions = useMemo(() => {
+    if (!searchQuery) return transactions;
+    return transactions.filter((t) =>
+      t.description.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [transactions, searchQuery]);
+
+  // Table columns
+  const columns: ColumnDef<Transaction>[] = useMemo(
+    () => [
+      {
+        accessorKey: 'trans_date',
+        header: 'Tanggal',
+        cell: ({ row }) => {
+          const date = new Date(row.getValue('trans_date'));
+          return (
+            <span className="tabular-nums">
+              {format(date, 'dd MMM yyyy', { locale: id })}
+            </span>
+          );
+        },
+      },
+      {
+        accessorKey: 'kas_type',
+        header: 'Jenis Kas',
+        cell: ({ row }) => {
+          const kasType = row.getValue('kas_type') as string;
+          return (
+            <Badge variant={kasType === 'koperasi' ? 'secondary' : 'outline'}>
+              {kasType === 'koperasi' ? '🏦 Koperasi' : '🪙 Biasa'}
+            </Badge>
+          );
+        },
+      },
+      {
+        accessorKey: 'type',
+        header: 'Tipe',
+        cell: ({ row }) => {
+          const type = row.getValue('type') as string;
+          return (
+            <Badge
+              className={cn(
+                'text-white',
+                type === 'pemasukan'
+                  ? 'bg-emerald-600 hover:bg-emerald-700'
+                  : 'bg-rose-600 hover:bg-rose-700'
+              )}
+            >
+              {type === 'pemasukan' ? 'Masuk' : 'Keluar'}
+            </Badge>
+          );
+        },
+      },
+      {
+        accessorKey: 'amount',
+        header: 'Jumlah',
+        cell: ({ row }) => {
+          const amount = row.getValue('amount') as number;
+          const type = row.original.type;
+          return (
+            <span
+              className={cn(
+                'font-bold tabular-nums',
+                type === 'pemasukan' ? 'text-emerald-600' : 'text-rose-600'
+              )}
+            >
+              {type === 'pemasukan' ? '+' : '-'}
+              {formatCurrency(amount)}
+            </span>
+          );
+        },
+      },
+      {
+        accessorKey: 'description',
+        header: 'Keterangan',
+        cell: ({ row }) => (
+          <span className="max-w-[200px] truncate">
+            {row.getValue('description')}
+          </span>
+        ),
+      },
+      {
+        id: 'actions',
+        header: '',
+        cell: ({ row }) => {
+          const transaction = row.original;
+          return (
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button variant="ghost" size="icon-sm" />
+                }
+              >
+                <MoreHorizontal className="size-4" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onClick={() => router.push(`/admin/edit/${transaction.id}`)}
+                >
+                  <Pencil className="size-4" />
+                  Edit
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  variant="destructive"
+                  onClick={() => setDeleteId(transaction.id)}
+                >
+                  <Trash2 className="size-4" />
+                  Hapus
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          );
+        },
+      },
+    ],
+    [router]
+  );
+
+  const table = useReactTable({
+    data: filteredTransactions,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+  });
+
+  const tipeTransaksi = form.watch('tipeTransaksi');
+
   return (
     <div className="p-4 md:p-8">
       <div className="mx-auto max-w-5xl space-y-6">
+        {/* Stat Cards */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Saldo</CardTitle>
+              <Wallet className="size-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div
+                className={cn(
+                  'text-2xl font-bold tabular-nums',
+                  stats.totalSaldo >= 0 ? 'text-emerald-600' : 'text-rose-600'
+                )}
+              >
+                {formatCurrency(stats.totalSaldo)}
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Pemasukan Bulan Ini
+              </CardTitle>
+              <TrendingUp className="size-4 text-emerald-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold tabular-nums text-emerald-600">
+                +{formatCurrency(stats.pemasukanBulanIni)}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {stats.countPemasukanBulanIni} transaksi
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Pengeluaran Bulan Ini
+              </CardTitle>
+              <TrendingDown className="size-4 text-rose-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold tabular-nums text-rose-600">
+                -{formatCurrency(stats.pengeluaranBulanIni)}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {stats.countPengeluaranBulanIni} transaksi
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Add Transaction Form */}
         <Card id="transaksi">
           <CardHeader>
@@ -154,86 +448,224 @@ export default function AdminClient({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleAdd} className="space-y-4">
-              {/* Kas Type Tabs */}
-              <div className="space-y-2">
-                <Label>Jenis Kas</Label>
-                <Tabs value={kasType} onValueChange={(v) => setKasType(v as 'biasa' | 'koperasi')}>
-                  <TabsList className="w-full">
-                    <TabsTrigger value="biasa" className="flex-1">💰 Kas Biasa</TabsTrigger>
-                    <TabsTrigger value="koperasi" className="flex-1">🏛️ Kas Koperasi</TabsTrigger>
-                  </TabsList>
-                </Tabs>
-              </div>
-
-              {/* Type Tabs */}
-              <div className="space-y-2">
-                <Label>Tipe Transaksi</Label>
-                <Tabs value={type} onValueChange={(v) => setType(v as 'pemasukan' | 'pengeluaran')}>
-                  <TabsList className="w-full">
-                    <TabsTrigger value="pemasukan" className="flex-1">💚 Pemasukan</TabsTrigger>
-                    <TabsTrigger value="pengeluaran" className="flex-1">❤️ Pengeluaran</TabsTrigger>
-                  </TabsList>
-                </Tabs>
-              </div>
-
-              {/* Form Fields */}
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                <div className="space-y-2">
-                  <Label htmlFor="amount">Jumlah</Label>
-                  <Input
-                    id="amount"
-                    type="number"
-                    placeholder="0"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    required
-                    min="1"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="description">Keterangan</Label>
-                  <Input
-                    id="description"
-                    type="text"
-                    placeholder="Deskripsi transaksi"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="transDate">Tanggal</Label>
-                  <Input
-                    id="transDate"
-                    type="date"
-                    value={transDate}
-                    onChange={(e) => setTransDate(e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
-
-              <Button
-                type="submit"
-                className="w-full"
-                variant={type === 'pemasukan' ? 'default' : 'destructive'}
-                disabled={loading}
+            <Form {...form}>
+              <form
+                onSubmit={form.handleSubmit(handleAdd)}
+                className="space-y-4"
               >
-                {loading ? 'Menyimpan...' : 'Simpan Transaksi'}
-              </Button>
-            </form>
+                {/* Jenis Kas ToggleGroup */}
+                <FormField
+                  control={form.control}
+                  name="jenisKas"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Jenis Kas</FormLabel>
+                      <FormControl>
+                        <ToggleGroup
+                          value={[field.value]}
+                          onValueChange={(value: string[]) => {
+                            if (value.length > 0) field.onChange(value[0]);
+                          }}
+                          className="w-full"
+                        >
+                          <ToggleGroupItem
+                            value="biasa"
+                            className="flex-1"
+                          >
+                            🪙 Kas Biasa
+                          </ToggleGroupItem>
+                          <ToggleGroupItem
+                            value="koperasi"
+                            className="flex-1"
+                          >
+                            🏦 Kas Koperasi
+                          </ToggleGroupItem>
+                        </ToggleGroup>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Tipe Transaksi ToggleGroup */}
+                <FormField
+                  control={form.control}
+                  name="tipeTransaksi"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tipe Transaksi</FormLabel>
+                      <FormControl>
+                        <ToggleGroup
+                          value={[field.value]}
+                          onValueChange={(value: string[]) => {
+                            if (value.length > 0) field.onChange(value[0]);
+                          }}
+                          className="w-full"
+                        >
+                          <ToggleGroupItem
+                            value="pemasukan"
+                            className={cn(
+                              'flex-1',
+                              'data-[state=on]:bg-emerald-600 data-[state=on]:text-white'
+                            )}
+                          >
+                            💚 Pemasukan
+                          </ToggleGroupItem>
+                          <ToggleGroupItem
+                            value="pengeluaran"
+                            className={cn(
+                              'flex-1',
+                              'data-[state=on]:bg-rose-600 data-[state=on]:text-white'
+                            )}
+                          >
+                            ❤️ Pengeluaran
+                          </ToggleGroupItem>
+                        </ToggleGroup>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Form Fields: Jumlah, Keterangan, Tanggal */}
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                  <FormField
+                    control={form.control}
+                    name="jumlah"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Jumlah</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            placeholder="0"
+                            {...field}
+                            value={field.value ?? ''}
+                            onChange={(e) =>
+                              field.onChange(
+                                e.target.value === ''
+                                  ? undefined
+                                  : Number(e.target.value)
+                              )
+                            }
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="keterangan"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Keterangan</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="text"
+                            placeholder="Deskripsi transaksi"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="tanggal"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tanggal</FormLabel>
+                        <Popover>
+                          <PopoverTrigger
+                            render={
+                              <Button
+                                variant="outline"
+                                className={cn(
+                                  'w-full justify-start text-left font-normal',
+                                  !field.value && 'text-muted-foreground'
+                                )}
+                              />
+                            }
+                          >
+                            <CalendarIcon className="mr-2 size-4" />
+                            {field.value ? (
+                              format(field.value, 'dd MMMM yyyy', { locale: id })
+                            ) : (
+                              <span>Pilih tanggal</span>
+                            )}
+                          </PopoverTrigger>
+                          <PopoverContent align="start" className="w-auto p-0">
+                            <Calendar
+                              mode="single"
+                              selected={field.value}
+                              onSelect={field.onChange}
+                              locale={id}
+                              disabled={(date) =>
+                                date > new Date() || date < new Date('1900-01-01')
+                              }
+                            />
+                          </PopoverContent>
+                        </Popover>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* Submit Button */}
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="size-4 animate-spin" />
+                      Menyimpan...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="size-4" />
+                      Simpan Transaksi
+                    </>
+                  )}
+                </Button>
+              </form>
+            </Form>
           </CardContent>
         </Card>
 
-        {/* Kas Type Filter */}
-        <Tabs value={filterType || 'all'} onValueChange={(v) => handleFilterChange(v === 'all' ? '' : v)}>
-          <TabsList className="w-full">
-            <TabsTrigger value="all" className="flex-1">📊 Semua</TabsTrigger>
-            <TabsTrigger value="biasa" className="flex-1">💰 Kas Biasa</TabsTrigger>
-            <TabsTrigger value="koperasi" className="flex-1">🏛️ Kas Koperasi</TabsTrigger>
-          </TabsList>
-        </Tabs>
+        {/* Filter Tabs + Search */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <Tabs
+            value={filterType || 'all'}
+            onValueChange={(v) => handleFilterChange(v === 'all' ? '' : v)}
+          >
+            <TabsList className="w-full sm:w-auto">
+              <TabsTrigger value="all" className="flex-1 sm:flex-none">
+                📊 Semua
+              </TabsTrigger>
+              <TabsTrigger value="biasa" className="flex-1 sm:flex-none">
+                🪙 Kas Biasa
+              </TabsTrigger>
+              <TabsTrigger value="koperasi" className="flex-1 sm:flex-none">
+                🏦 Kas Koperasi
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Cari keterangan..."
+              className="pl-8"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+        </div>
 
         {/* Transaction List */}
         <Card>
@@ -244,108 +676,93 @@ export default function AdminClient({
             </div>
           </CardHeader>
           <CardContent>
-            {transactions.length === 0 ? (
-              <p className="py-8 text-center text-muted-foreground">Belum ada transaksi</p>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Keterangan</TableHead>
-                    <TableHead className="w-[120px]">Jenis Kas</TableHead>
-                    <TableHead className="w-[100px]">Tanggal</TableHead>
-                    <TableHead className="w-[150px] text-right">Jumlah</TableHead>
-                    <TableHead className="w-[50px]"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {transactions.map((t) => (
-                    <TableRow key={t.id}>
-                      <TableCell className="font-medium">
-                        <div className="flex items-center gap-2">
-                          <Badge variant={t.type === 'pemasukan' ? 'default' : 'destructive'} className="text-[10px]">
-                            {t.type === 'pemasukan' ? 'Masuk' : 'Keluar'}
-                          </Badge>
-                          {t.description}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={t.kas_type === 'koperasi' ? 'secondary' : 'outline'}>
-                          {t.kas_type === 'koperasi' ? '🏛️ Koperasi' : '💰 Biasa'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">{t.trans_date}</TableCell>
-                      <TableCell className="text-right">
-                        <span className={`font-bold tabular-nums ${
-                          t.type === 'pemasukan' ? 'text-emerald-500' : 'text-destructive'
-                        }`}>
-                          {t.type === 'pemasukan' ? '+' : '-'}{formatCurrency(t.amount)}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" />}>
-                            <MoreHorizontal className="size-4" />
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => router.push(`/admin/edit/${t.id}`)}>
-                              <Pencil className="size-4" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              variant="destructive"
-                              onClick={() => setDeleteId(t.id)}
-                            >
-                              <Trash2 className="size-4" />
-                              Hapus
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="mt-4 flex items-center justify-between">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page <= 1}
-                  onClick={() => router.push(getPaginationUrl(page - 1))}
-                >
-                  <ChevronLeft className="size-4" />
-                  Prev
-                </Button>
-                <span className="text-sm text-muted-foreground">
-                  Halaman {page} dari {totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page >= totalPages}
-                  onClick={() => router.push(getPaginationUrl(page + 1))}
-                >
-                  Next
-                  <ChevronRight className="size-4" />
-                </Button>
+            {filteredTransactions.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="flex size-16 items-center justify-center rounded-full bg-muted">
+                  <Receipt className="size-8 text-muted-foreground" />
+                </div>
+                <h3 className="mt-4 text-lg font-semibold">
+                  Belum ada transaksi
+                </h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Tambahkan transaksi pertama menggunakan form di atas
+                </p>
               </div>
+            ) : (
+              <>
+                <Table>
+                  <TableHeader>
+                    {table.getHeaderGroups().map((headerGroup) => (
+                      <TableRow key={headerGroup.id}>
+                        {headerGroup.headers.map((header) => (
+                          <TableHead key={header.id}>
+                            {header.isPlaceholder
+                              ? null
+                              : flexRender(
+                                  header.column.columnDef.header,
+                                  header.getContext()
+                                )}
+                          </TableHead>
+                        ))}
+                      </TableRow>
+                    ))}
+                  </TableHeader>
+                  <TableBody>
+                    {table.getRowModel().rows.map((row) => (
+                      <TableRow key={row.id}>
+                        {row.getVisibleCells().map((cell) => (
+                          <TableCell key={cell.id}>
+                            {flexRender(
+                              cell.column.columnDef.cell,
+                              cell.getContext()
+                            )}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="mt-4 flex items-center justify-between">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={page <= 1}
+                      onClick={() => router.push(getPaginationUrl(page - 1))}
+                    >
+                      <ChevronLeft className="size-4" />
+                      Prev
+                    </Button>
+                    <span className="text-sm text-muted-foreground tabular-nums">
+                      Halaman {page} dari {totalPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={page >= totalPages}
+                      onClick={() => router.push(getPaginationUrl(page + 1))}
+                    >
+                      Next
+                      <ChevronRight className="size-4" />
+                    </Button>
+                  </div>
+                )}
+              </>
             )}
           </CardContent>
         </Card>
 
-        {/* Backup & Settings */}
-        <Card id="settings">
+        {/* Backup Section */}
+        <Card id="backup">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Settings className="size-4" />
-              Backup & Pengaturan
+              <Download className="size-4" />
+              Backup
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Backup Button */}
+          <CardContent>
             <div className="flex items-center gap-4">
               <Button
                 onClick={handleBackup}
@@ -363,59 +780,56 @@ export default function AdminClient({
                 Kirim file Excel ke Telegram
               </span>
             </div>
+          </CardContent>
+        </Card>
 
-            <Separator />
-
-            {/* Settings Section */}
-            <div className="space-y-3">
-              <Button
-                variant="ghost"
-                className="gap-2 p-0 h-auto font-medium"
-                onClick={() => setSettingsOpen(!settingsOpen)}
-              >
-                <Settings className="size-4" />
-                Pengaturan Telegram
-                <span className="text-xs text-muted-foreground">
-                  {settingsOpen ? '▲' : '▼'}
-                </span>
-              </Button>
-
-              {settingsOpen && (
-                <div className="space-y-3 rounded-lg border p-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="chatId">Telegram Chat ID</Label>
-                    <Input
-                      id="chatId"
-                      type="text"
-                      placeholder="584847845"
-                      value={chatId}
-                      onChange={(e) => setChatId(e.target.value)}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Chat ID untuk menerima file backup Excel
-                    </p>
-                  </div>
-                  <Button
-                    onClick={handleSaveSettings}
-                    disabled={savingSettings}
-                    size="sm"
-                    className="gap-2"
-                  >
-                    {savingSettings ? (
-                      <Loader2 className="size-4 animate-spin" />
-                    ) : (
-                      <Save className="size-4" />
-                    )}
-                    {savingSettings ? 'Menyimpan...' : 'Simpan Pengaturan'}
-                  </Button>
-                </div>
-              )}
+        {/* Settings Section */}
+        <Card id="settings">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Settings className="size-4" />
+              Pengaturan
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="chatId" className="text-sm font-medium">
+                Telegram Chat ID
+              </label>
+              <Input
+                id="chatId"
+                type="text"
+                placeholder="584847845"
+                value={chatId}
+                onChange={(e) => setChatId(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Chat ID untuk menerima file backup Excel
+              </p>
             </div>
+            <Button
+              onClick={handleSaveSettings}
+              disabled={savingSettings}
+              size="sm"
+              className="gap-2"
+            >
+              {savingSettings ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Save className="size-4" />
+              )}
+              {savingSettings ? 'Menyimpan...' : 'Simpan Pengaturan'}
+            </Button>
           </CardContent>
         </Card>
 
         {/* Delete Confirmation Dialog */}
-        <Dialog open={deleteId !== null} onOpenChange={(open) => { if (!open) setDeleteId(null); }}>
+        <Dialog
+          open={deleteId !== null}
+          onOpenChange={(open) => {
+            if (!open) setDeleteId(null);
+          }}
+        >
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Hapus Transaksi</DialogTitle>

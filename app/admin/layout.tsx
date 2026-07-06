@@ -1,6 +1,6 @@
 import { getSession } from '@/lib/session';
 import { redirect } from 'next/navigation';
-import AdminSidebarLayout from './AdminSidebarLayout';
+import AppSidebar from '@/components/app-sidebar';
 
 export default async function AdminLayout({
   children,
@@ -11,8 +11,8 @@ export default async function AdminLayout({
   if (!session.isLoggedIn) redirect('/login');
 
   return (
-    <AdminSidebarLayout username={session.username || 'Admin'}>
+    <AppSidebar username={session.username || 'Admin'}>
       {children}
-    </AdminSidebarLayout>
+    </AppSidebar>
   );
 }
