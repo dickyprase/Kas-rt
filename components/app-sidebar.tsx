@@ -39,12 +39,10 @@ import {
 import ThemeToggle from '@/app/components/ThemeToggle';
 import {
   LayoutDashboard,
-  ArrowLeftRight,
   Settings,
   ExternalLink,
   Coins,
   LogOut,
-  User,
 } from 'lucide-react';
 
 const navItems = [
@@ -54,9 +52,16 @@ const navItems = [
     url: '/admin',
   },
   {
-    title: 'Transaksi',
-    icon: ArrowLeftRight,
-    url: '/admin/transaksi',
+    title: 'Kas Biasa',
+    icon: null,
+    emoji: '🪙',
+    url: '/admin/transaksi/biasa',
+  },
+  {
+    title: 'Kas Koperasi',
+    icon: null,
+    emoji: '🏦',
+    url: '/admin/transaksi/koperasi',
   },
   {
     title: 'Settings',
@@ -67,7 +72,8 @@ const navItems = [
 
 const breadcrumbMap: Record<string, string> = {
   '/admin': 'Dashboard',
-  '/admin/transaksi': 'Transaksi',
+  '/admin/transaksi/biasa': 'Kas Biasa',
+  '/admin/transaksi/koperasi': 'Kas Koperasi',
   '/admin/settings': 'Settings',
 };
 
@@ -127,7 +133,11 @@ export default function AppSidebar({
                           isActive={isActive}
                           render={<Link href={item.url} />}
                         >
-                          <item.icon />
+                          {item.emoji ? (
+                            <span className="text-base">{item.emoji}</span>
+                          ) : item.icon ? (
+                            <item.icon />
+                          ) : null}
                           <span>{item.title}</span>
                         </SidebarMenuButton>
                       </SidebarMenuItem>

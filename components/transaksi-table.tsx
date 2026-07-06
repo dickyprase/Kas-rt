@@ -12,7 +12,6 @@ import {
 } from '@tanstack/react-table';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -79,11 +78,12 @@ export interface Transaction {
 
 export default function TransaksiTable({
   transactions,
+  hideKasTypeColumn = false,
 }: {
   transactions: Transaction[];
+  hideKasTypeColumn?: boolean;
 }) {
   const router = useRouter();
-  const [filterType, setFilterType] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [pageSize, setPageSize] = useState(10);
@@ -92,16 +92,13 @@ export default function TransaksiTable({
   // Filter
   const filteredTransactions = useMemo(() => {
     let result = transactions;
-    if (filterType !== 'all') {
-      result = result.filter((t) => t.kas_type === filterType);
-    }
     if (searchQuery) {
       result = result.filter((t) =>
         t.description.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
     return result;
-  }, [transactions, filterType, searchQuery]);
+  }, [transactions, searchQuery]);
 
   // Pagination
   const totalPages = Math.ceil(filteredTransactions.length / pageSize);
@@ -109,12 +106,6 @@ export default function TransaksiTable({
     const start = currentPage * pageSize;
     return filteredTransactions.slice(start, start + pageSize);
   }, [filteredTransactions, currentPage, pageSize]);
-
-  // Reset page on filter change
-  const handleFilterChange = (value: string) => {
-    setFilterType(value);
-    setCurrentPage(0);
-  };
 
   async function handleDelete(id: number) {
     const res = await fetch(`/api/transactions?id=${id}`, { method: 'DELETE' });
@@ -127,8 +118,8 @@ export default function TransaksiTable({
     }
   }
 
-  const columns: ColumnDef<Transaction>[] = useMemo(
-    () => [
+  const columns: ColumnDef<Transaction>[] = useMemo(() => {
+    const cols: ColumnDef<Transaction>[] = [
       {
         accessorKey: 'trans_date',
         header: 'Tanggal',
@@ -141,7 +132,10 @@ export default function TransaksiTable({
           );
         },
       },
-      {
+    ];
+
+    if (!hideKasTypeColumn) {
+      cols.push({
         accessorKey: 'kas_type',
         header: 'Jenis Kas',
         cell: ({ row }) => {
@@ -152,7 +146,10 @@ export default function TransaksiTable({
             </Badge>
           );
         },
-      },
+      });
+    }
+
+    cols.push(
       {
         accessorKey: 'type',
         header: 'Tipe',
@@ -232,10 +229,11 @@ export default function TransaksiTable({
             </DropdownMenu>
           );
         },
-      },
-    ],
-    [router]
-  );
+      }
+    );
+
+    return cols;
+  }, [router, hideKasTypeColumn]);
 
   const table = useReactTable({
     data: paginatedData,
@@ -245,24 +243,8 @@ export default function TransaksiTable({
 
   return (
     <>
-      {/* Filter Tabs + Search + Page Size */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <Tabs
-          value={filterType}
-          onValueChange={handleFilterChange}
-        >
-          <TabsList className="w-full sm:w-auto">
-            <TabsTrigger value="all" className="flex-1 sm:flex-none">
-              📊 Semua
-            </TabsTrigger>
-            <TabsTrigger value="biasa" className="flex-1 sm:flex-none">
-              🪙 Kas Biasa
-            </TabsTrigger>
-            <TabsTrigger value="koperasi" className="flex-1 sm:flex-none">
-              🏦 Kas Koperasi
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
+      {/* Search + Page Size */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-end">
         <div className="flex items-center gap-2">
           <div className="relative w-full sm:w-64">
             <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />

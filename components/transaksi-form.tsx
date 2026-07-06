@@ -40,14 +40,19 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-export default function TransaksiForm() {
+export interface TransaksiFormProps {
+  kasType?: 'biasa' | 'koperasi';
+  onSuccess?: () => void;
+}
+
+export default function TransaksiForm({ kasType }: TransaksiFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      jenisKas: 'biasa',
+      jenisKas: kasType ?? 'biasa',
       tipeTransaksi: 'pemasukan',
       jumlah: undefined as unknown as number,
       keterangan: '',
@@ -71,7 +76,7 @@ export default function TransaksiForm() {
       });
       if (res.ok) {
         form.reset({
-          jenisKas: 'biasa',
+          jenisKas: kasType ?? 'biasa',
           tipeTransaksi: 'pemasukan',
           jumlah: undefined as unknown as number,
           keterangan: '',
@@ -100,33 +105,35 @@ export default function TransaksiForm() {
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            {/* Jenis Kas */}
-            <FormField
-              control={form.control}
-              name="jenisKas"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Jenis Kas</FormLabel>
-                  <FormControl>
-                    <ToggleGroup
-                      value={[field.value]}
-                      onValueChange={(value: string[]) => {
-                        if (value.length > 0) field.onChange(value[0]);
-                      }}
-                      className="w-full"
-                    >
-                      <ToggleGroupItem value="biasa" className="flex-1">
-                        🪙 Kas Biasa
-                      </ToggleGroupItem>
-                      <ToggleGroupItem value="koperasi" className="flex-1">
-                        🏦 Kas Koperasi
-                      </ToggleGroupItem>
-                    </ToggleGroup>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {/* Jenis Kas - hidden when kasType is provided */}
+            {!kasType && (
+              <FormField
+                control={form.control}
+                name="jenisKas"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Jenis Kas</FormLabel>
+                    <FormControl>
+                      <ToggleGroup
+                        value={[field.value]}
+                        onValueChange={(value: string[]) => {
+                          if (value.length > 0) field.onChange(value[0]);
+                        }}
+                        className="w-full"
+                      >
+                        <ToggleGroupItem value="biasa" className="flex-1">
+                          🪙 Kas Biasa
+                        </ToggleGroupItem>
+                        <ToggleGroupItem value="koperasi" className="flex-1">
+                          🏦 Kas Koperasi
+                        </ToggleGroupItem>
+                      </ToggleGroup>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             {/* Tipe Transaksi */}
             <FormField
