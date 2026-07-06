@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import ThemeToggle from '../components/ThemeToggle';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
@@ -13,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Separator } from '@/components/ui/separator';
-import { Plus, MoreHorizontal, Pencil, Trash2, LogOut, ChevronLeft, ChevronRight, Download, Settings, Save, Loader2 } from 'lucide-react';
+import { Plus, MoreHorizontal, Pencil, Trash2, ChevronLeft, ChevronRight, Download, Settings, Save, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 function formatCurrency(amount: number): string {
@@ -92,11 +91,6 @@ export default function AdminClient({
     }
   }
 
-  async function handleLogout() {
-    await fetch('/api/logout', { method: 'POST' });
-    router.push('/');
-  }
-
   function handleFilterChange(newFilter: string) {
     setFilterType(newFilter);
     const url = newFilter ? `/admin?kas_type=${newFilter}` : '/admin';
@@ -149,28 +143,10 @@ export default function AdminClient({
   }
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-8">
+    <div className="p-4 md:p-8">
       <div className="mx-auto max-w-5xl space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">⚙️ Admin Panel</h1>
-            <p className="text-sm text-muted-foreground">Kelola transaksi kas</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
-            <Badge variant="secondary">{username}</Badge>
-            <Button variant="ghost" size="sm" onClick={handleLogout}>
-              <LogOut className="size-4" />
-              Logout
-            </Button>
-          </div>
-        </div>
-
-        <Separator />
-
         {/* Add Transaction Form */}
-        <Card>
+        <Card id="transaksi">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Plus className="size-4" />
@@ -361,7 +337,7 @@ export default function AdminClient({
         </Card>
 
         {/* Backup & Settings */}
-        <Card>
+        <Card id="settings">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Settings className="size-4" />
@@ -437,12 +413,6 @@ export default function AdminClient({
             </div>
           </CardContent>
         </Card>
-
-        <div className="text-center">
-          <a href="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-            ← Kembali ke Dashboard
-          </a>
-        </div>
 
         {/* Delete Confirmation Dialog */}
         <Dialog open={deleteId !== null} onOpenChange={(open) => { if (!open) setDeleteId(null); }}>

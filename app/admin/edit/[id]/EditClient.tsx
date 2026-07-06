@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import ThemeToggle from '../../../components/ThemeToggle';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
@@ -34,14 +33,11 @@ export default function EditClient({ transaction }: { transaction: any }) {
   }
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-8">
+    <div className="p-4 md:p-8">
       <div className="mx-auto max-w-lg">
-        <div className="mb-6 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">✏️ Edit Transaksi</h1>
-            <p className="text-sm text-muted-foreground">Ubah data transaksi</p>
-          </div>
-          <ThemeToggle />
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold tracking-tight">✏️ Edit Transaksi</h1>
+          <p className="text-sm text-muted-foreground">Ubah data transaksi</p>
         </div>
 
         <Card>
