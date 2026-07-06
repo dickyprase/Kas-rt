@@ -2,9 +2,11 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import ThemeToggle from '../../../components/ThemeToggle';
 
 export default function EditClient({ transaction }: { transaction: any }) {
   const router = useRouter();
+  const [kasType, setKasType] = useState<'biasa' | 'koperasi'>(transaction.kas_type || 'biasa');
   const [type, setType] = useState<'pemasukan' | 'pengeluaran'>(transaction.type);
   const [amount, setAmount] = useState(String(transaction.amount));
   const [description, setDescription] = useState(transaction.description);
@@ -17,7 +19,7 @@ export default function EditClient({ transaction }: { transaction: any }) {
     const res = await fetch('/api/transactions', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: transaction.id, type, amount: parseInt(amount), description, trans_date: transDate }),
+      body: JSON.stringify({ id: transaction.id, type, kas_type: kasType, amount: parseInt(amount), description, trans_date: transDate }),
     });
     if (res.ok) {
       router.push('/admin');
@@ -26,23 +28,52 @@ export default function EditClient({ transaction }: { transaction: any }) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 p-4 md:p-8">
+    <div className="min-h-screen bg-[--background] p-4 md:p-8">
       <div className="max-w-lg mx-auto">
-        <h1 className="text-xl font-bold mb-6">✏️ Edit Transaksi</h1>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-xl font-bold">✏️ Edit Transaksi</h1>
+          <ThemeToggle />
+        </div>
 
-        <form onSubmit={handleSubmit} className="bg-gray-900 rounded-xl p-4 border border-gray-800">
+        <form onSubmit={handleSubmit} className="bg-[--card-bg] rounded-xl p-4 border border-[--card-border]">
+          {/* Kas Type Toggle */}
+          <div className="flex gap-2 mb-4">
+            <button
+              type="button"
+              onClick={() => setKasType('biasa')}
+              className={`flex-1 py-2 rounded-lg font-medium transition ${
+                kasType === 'biasa'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-[--input-bg] text-[--muted-text] border border-[--input-border]'
+              }`}
+            >
+              💰 Kas Biasa
+            </button>
+            <button
+              type="button"
+              onClick={() => setKasType('koperasi')}
+              className={`flex-1 py-2 rounded-lg font-medium transition ${
+                kasType === 'koperasi'
+                  ? 'bg-purple-600 text-white'
+                  : 'bg-[--input-bg] text-[--muted-text] border border-[--input-border]'
+              }`}
+            >
+              🏛️ Kas Koperasi
+            </button>
+          </div>
+
           <div className="flex gap-2 mb-4">
             <button
               type="button"
               onClick={() => setType('pemasukan')}
-              className={`flex-1 py-2 rounded-lg font-medium transition ${type === 'pemasukan' ? 'bg-green-600 text-white' : 'bg-gray-800 text-gray-400 border border-gray-700'}`}
+              className={`flex-1 py-2 rounded-lg font-medium transition ${type === 'pemasukan' ? 'bg-green-600 text-white' : 'bg-[--input-bg] text-[--muted-text] border border-[--input-border]'}`}
             >
               Pemasukan
             </button>
             <button
               type="button"
               onClick={() => setType('pengeluaran')}
-              className={`flex-1 py-2 rounded-lg font-medium transition ${type === 'pengeluaran' ? 'bg-red-600 text-white' : 'bg-gray-800 text-gray-400 border border-gray-700'}`}
+              className={`flex-1 py-2 rounded-lg font-medium transition ${type === 'pengeluaran' ? 'bg-red-600 text-white' : 'bg-[--input-bg] text-[--muted-text] border border-[--input-border]'}`}
             >
               Pengeluaran
             </button>
@@ -54,7 +85,7 @@ export default function EditClient({ transaction }: { transaction: any }) {
               placeholder="Jumlah"
               value={amount}
               onChange={e => setAmount(e.target.value)}
-              className="w-full bg-gray-800 rounded-lg px-4 py-2 border border-gray-700 focus:border-blue-500 focus:outline-none"
+              className="w-full bg-[--input-bg] rounded-lg px-4 py-2 border border-[--input-border] focus:border-blue-500 focus:outline-none text-[--foreground]"
               required
               min="1"
             />
@@ -63,14 +94,14 @@ export default function EditClient({ transaction }: { transaction: any }) {
               placeholder="Keterangan"
               value={description}
               onChange={e => setDescription(e.target.value)}
-              className="w-full bg-gray-800 rounded-lg px-4 py-2 border border-gray-700 focus:border-blue-500 focus:outline-none"
+              className="w-full bg-[--input-bg] rounded-lg px-4 py-2 border border-[--input-border] focus:border-blue-500 focus:outline-none text-[--foreground]"
               required
             />
             <input
               type="date"
               value={transDate}
               onChange={e => setTransDate(e.target.value)}
-              className="w-full bg-gray-800 rounded-lg px-4 py-2 border border-gray-700 focus:border-blue-500 focus:outline-none"
+              className="w-full bg-[--input-bg] rounded-lg px-4 py-2 border border-[--input-border] focus:border-blue-500 focus:outline-none text-[--foreground]"
               required
             />
           </div>
@@ -85,7 +116,7 @@ export default function EditClient({ transaction }: { transaction: any }) {
             </button>
             <a
               href="/admin"
-              className="flex-1 py-2 rounded-lg font-medium bg-gray-800 hover:bg-gray-700 text-center transition"
+              className="flex-1 py-2 rounded-lg font-medium bg-[--input-bg] hover:bg-[--card-bg-secondary] text-center transition border border-[--input-border]"
             >
               Batal
             </a>

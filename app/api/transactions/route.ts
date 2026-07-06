@@ -11,13 +11,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { type, amount, description, trans_date } = await request.json();
+  const { type, kas_type, amount, description, trans_date } = await request.json();
 
   if (!type || !amount || !description || !trans_date) {
     return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
   }
 
-  await db.query('INSERT INTO transactions (type, amount, description, trans_date) VALUES ($1, $2, $3, $4)', [type, amount, description, trans_date]);
+  const kasType = kas_type || 'biasa';
+
+  await db.query(
+    'INSERT INTO transactions (type, kas_type, amount, description, trans_date) VALUES ($1, $2, $3, $4, $5)',
+    [type, kasType, amount, description, trans_date]
+  );
 
   return NextResponse.json({ success: true });
 }
@@ -29,13 +34,18 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { id, type, amount, description, trans_date } = await request.json();
+  const { id, type, kas_type, amount, description, trans_date } = await request.json();
 
   if (!id || !type || !amount || !description || !trans_date) {
     return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
   }
 
-  await db.query('UPDATE transactions SET type=$1, amount=$2, description=$3, trans_date=$4 WHERE id=$5', [type, amount, description, trans_date, id]);
+  const kasType = kas_type || 'biasa';
+
+  await db.query(
+    'UPDATE transactions SET type=$1, kas_type=$2, amount=$3, description=$4, trans_date=$5 WHERE id=$6',
+    [type, kasType, amount, description, trans_date, id]
+  );
 
   return NextResponse.json({ success: true });
 }
