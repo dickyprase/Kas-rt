@@ -154,6 +154,7 @@ export default function TransaksiForm({ kasType }: TransaksiFormProps) {
                         value="pemasukan"
                         className={cn(
                           'flex-1',
+                          'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400',
                           'data-[state=on]:bg-emerald-600 data-[state=on]:text-white'
                         )}
                       >
@@ -163,6 +164,7 @@ export default function TransaksiForm({ kasType }: TransaksiFormProps) {
                         value="pengeluaran"
                         className={cn(
                           'flex-1',
+                          'bg-rose-50 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400',
                           'data-[state=on]:bg-rose-600 data-[state=on]:text-white'
                         )}
                       >

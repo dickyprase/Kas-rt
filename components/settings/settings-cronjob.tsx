@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Save, Loader2, Info, Clock } from 'lucide-react';
+import { Save, Loader2, Info, Clock, Send } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface CronSettings {
@@ -47,6 +47,7 @@ export default function SettingsCronjob({
 }) {
   const [settings, setSettings] = useState<CronSettings>(initialSettings);
   const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
 
   async function handleSave() {
     setSaving(true);
@@ -67,6 +68,23 @@ export default function SettingsCronjob({
       toast.error('Gagal menyimpan: Network error');
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleTestExport() {
+    setTesting(true);
+    try {
+      const res = await fetch('/api/backup', { method: 'POST' });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success('✅ Test export berhasil! File Excel sudah dikirim ke Telegram');
+      } else {
+        toast.error(`❌ Gagal: ${data.error || 'Unknown error'}`);
+      }
+    } catch {
+      toast.error('❌ Gagal: Network error');
+    } finally {
+      setTesting(false);
     }
   }
 
@@ -195,14 +213,24 @@ export default function SettingsCronjob({
           </AlertDescription>
         </Alert>
 
-        <Button onClick={handleSave} disabled={saving} className="gap-2">
-          {saving ? (
-            <Loader2 className="size-4 animate-spin" />
-          ) : (
-            <Save className="size-4" />
-          )}
-          {saving ? 'Menyimpan...' : 'Simpan'}
-        </Button>
+        <div className="flex gap-3">
+          <Button onClick={handleSave} disabled={saving} className="gap-2">
+            {saving ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Save className="size-4" />
+            )}
+            {saving ? 'Menyimpan...' : 'Simpan'}
+          </Button>
+          <Button onClick={handleTestExport} disabled={testing} variant="outline" className="gap-2">
+            {testing ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Send className="size-4" />
+            )}
+            {testing ? 'Mengirim...' : 'Test Export Excel'}
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );
