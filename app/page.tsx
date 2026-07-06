@@ -41,12 +41,6 @@ export default async function PublicPage() {
   const now = new Date();
   const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
 
-  // Total saldo
-  const saldoResult = await db.query(
-    "SELECT COALESCE(SUM(CASE WHEN type='pemasukan' THEN amount ELSE 0 END), 0) - COALESCE(SUM(CASE WHEN type='pengeluaran' THEN amount ELSE 0 END), 0) as saldo FROM transactions"
-  );
-  const totalSaldo = Number(saldoResult.rows[0]?.saldo) || 0;
-
   // Per kas type
   async function getKasData(kasType: string) {
     const saldoRes = await db.query(
@@ -87,23 +81,11 @@ export default async function PublicPage() {
             📊 {appName}
           </h1>
           <p className="text-muted-foreground">Dashboard Keuangan</p>
-          <div className="flex items-center justify-center gap-2">
-            <div
-              className={`text-4xl font-bold tabular-nums md:text-5xl ${
-                totalSaldo >= 0
-                  ? 'bg-gradient-to-r from-emerald-400 to-emerald-600 bg-clip-text text-transparent'
-                  : 'bg-gradient-to-r from-red-400 to-red-600 bg-clip-text text-transparent'
-              }`}
-            >
-              {formatCurrency(totalSaldo)}
-            </div>
-          </div>
           <div className="flex items-center justify-center gap-1.5">
             <Activity className="size-3 text-emerald-500 animate-pulse" />
             <span className="text-xs text-muted-foreground">Live</span>
           </div>
         </div>
-
         <Separator />
 
         {/* Kas Cards */}

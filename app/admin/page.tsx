@@ -1,7 +1,7 @@
 import db from '@/lib/db';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Wallet, TrendingUp, TrendingDown, ArrowLeftRight, Eye } from 'lucide-react';
+import { TrendingUp, TrendingDown, ArrowLeftRight, Eye } from 'lucide-react';
 import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
@@ -19,13 +19,6 @@ export default async function DashboardPage() {
   const now = new Date();
   const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
 
-  // Total saldo
-  const saldoResult = await db.query(
-    "SELECT COALESCE(SUM(CASE WHEN type='pemasukan' THEN amount ELSE 0 END), 0) - COALESCE(SUM(CASE WHEN type='pengeluaran' THEN amount ELSE 0 END), 0) as saldo FROM transactions"
-  );
-  const totalSaldo = Number(saldoResult.rows[0]?.saldo) || 0;
-
-  // Pemasukan bulan ini
   const pemasukanResult = await db.query(
     "SELECT COALESCE(SUM(amount), 0) as total, COUNT(*) as count FROM transactions WHERE type='pemasukan' AND trans_date >= $1",
     [monthStart]
@@ -70,22 +63,7 @@ export default async function DashboardPage() {
   return (
     <>
       {/* Stat Cards */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Saldo</CardTitle>
-            <Wallet className="size-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div
-              className={`text-2xl font-bold tabular-nums ${
-                totalSaldo >= 0 ? 'text-emerald-600' : 'text-rose-600'
-              }`}
-            >
-              {formatCurrency(totalSaldo)}
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
