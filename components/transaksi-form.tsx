@@ -100,7 +100,7 @@ export default function TransaksiForm({ kasType }: TransaksiFormProps) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Plus className="size-4" />
+          <Plus className="size-5" />
           Tambah Transaksi
         </CardTitle>
       </CardHeader>
@@ -284,15 +284,15 @@ export default function TransaksiForm({ kasType }: TransaksiFormProps) {
               />
             </div>
 
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full h-14 text-base font-semibold" disabled={loading}>
               {loading ? (
                 <>
-                  <Loader2 className="size-4 animate-spin" />
+                  <Loader2 className="size-5 animate-spin" />
                   Menyimpan...
                 </>
               ) : (
                 <>
-                  <Plus className="size-4" />
+                  <Plus className="size-5" />
                   Simpan Transaksi
                 </>
               )}
