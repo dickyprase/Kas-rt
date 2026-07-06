@@ -3,6 +3,12 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import ThemeToggle from '../../../components/ThemeToggle';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { Pencil } from 'lucide-react';
 
 export default function EditClient({ transaction }: { transaction: any }) {
   const router = useRouter();
@@ -28,100 +34,104 @@ export default function EditClient({ transaction }: { transaction: any }) {
   }
 
   return (
-    <div className="min-h-screen bg-[--background] p-4 md:p-8">
-      <div className="max-w-lg mx-auto">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-xl font-bold">✏️ Edit Transaksi</h1>
+    <div className="min-h-screen bg-background p-4 md:p-8">
+      <div className="mx-auto max-w-lg">
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">✏️ Edit Transaksi</h1>
+            <p className="text-sm text-muted-foreground">Ubah data transaksi</p>
+          </div>
           <ThemeToggle />
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-[--card-bg] rounded-xl p-4 border border-[--card-border]">
-          {/* Kas Type Toggle */}
-          <div className="flex gap-2 mb-4">
-            <button
-              type="button"
-              onClick={() => setKasType('biasa')}
-              className={`flex-1 py-2 rounded-lg font-medium transition ${
-                kasType === 'biasa'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-[--input-bg] text-[--muted-text] border border-[--input-border]'
-              }`}
-            >
-              💰 Kas Biasa
-            </button>
-            <button
-              type="button"
-              onClick={() => setKasType('koperasi')}
-              className={`flex-1 py-2 rounded-lg font-medium transition ${
-                kasType === 'koperasi'
-                  ? 'bg-purple-600 text-white'
-                  : 'bg-[--input-bg] text-[--muted-text] border border-[--input-border]'
-              }`}
-            >
-              🏛️ Kas Koperasi
-            </button>
-          </div>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Pencil className="size-4" />
+              Form Edit
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Kas Type Tabs */}
+              <div className="space-y-2">
+                <Label>Jenis Kas</Label>
+                <Tabs value={kasType} onValueChange={(v) => setKasType(v as 'biasa' | 'koperasi')}>
+                  <TabsList className="w-full">
+                    <TabsTrigger value="biasa" className="flex-1">💰 Kas Biasa</TabsTrigger>
+                    <TabsTrigger value="koperasi" className="flex-1">🏛️ Kas Koperasi</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </div>
 
-          <div className="flex gap-2 mb-4">
-            <button
-              type="button"
-              onClick={() => setType('pemasukan')}
-              className={`flex-1 py-2 rounded-lg font-medium transition ${type === 'pemasukan' ? 'bg-green-600 text-white' : 'bg-[--input-bg] text-[--muted-text] border border-[--input-border]'}`}
-            >
-              Pemasukan
-            </button>
-            <button
-              type="button"
-              onClick={() => setType('pengeluaran')}
-              className={`flex-1 py-2 rounded-lg font-medium transition ${type === 'pengeluaran' ? 'bg-red-600 text-white' : 'bg-[--input-bg] text-[--muted-text] border border-[--input-border]'}`}
-            >
-              Pengeluaran
-            </button>
-          </div>
+              {/* Type Tabs */}
+              <div className="space-y-2">
+                <Label>Tipe Transaksi</Label>
+                <Tabs value={type} onValueChange={(v) => setType(v as 'pemasukan' | 'pengeluaran')}>
+                  <TabsList className="w-full">
+                    <TabsTrigger value="pemasukan" className="flex-1">💚 Pemasukan</TabsTrigger>
+                    <TabsTrigger value="pengeluaran" className="flex-1">❤️ Pengeluaran</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </div>
 
-          <div className="space-y-3 mb-4">
-            <input
-              type="number"
-              placeholder="Jumlah"
-              value={amount}
-              onChange={e => setAmount(e.target.value)}
-              className="w-full bg-[--input-bg] rounded-lg px-4 py-2 border border-[--input-border] focus:border-blue-500 focus:outline-none text-[--foreground]"
-              required
-              min="1"
-            />
-            <input
-              type="text"
-              placeholder="Keterangan"
-              value={description}
-              onChange={e => setDescription(e.target.value)}
-              className="w-full bg-[--input-bg] rounded-lg px-4 py-2 border border-[--input-border] focus:border-blue-500 focus:outline-none text-[--foreground]"
-              required
-            />
-            <input
-              type="date"
-              value={transDate}
-              onChange={e => setTransDate(e.target.value)}
-              className="w-full bg-[--input-bg] rounded-lg px-4 py-2 border border-[--input-border] focus:border-blue-500 focus:outline-none text-[--foreground]"
-              required
-            />
-          </div>
+              {/* Form Fields */}
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="amount">Jumlah</Label>
+                  <Input
+                    id="amount"
+                    type="number"
+                    placeholder="0"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    required
+                    min="1"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="description">Keterangan</Label>
+                  <Input
+                    id="description"
+                    type="text"
+                    placeholder="Deskripsi transaksi"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="transDate">Tanggal</Label>
+                  <Input
+                    id="transDate"
+                    type="date"
+                    value={transDate}
+                    onChange={(e) => setTransDate(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
 
-          <div className="flex gap-3">
-            <button
-              type="submit"
-              disabled={loading}
-              className={`flex-1 py-2 rounded-lg font-medium transition ${type === 'pemasukan' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'} disabled:opacity-50`}
-            >
-              {loading ? 'Menyimpan...' : 'Simpan'}
-            </button>
-            <a
-              href="/admin"
-              className="flex-1 py-2 rounded-lg font-medium bg-[--input-bg] hover:bg-[--card-bg-secondary] text-center transition border border-[--input-border]"
-            >
-              Batal
-            </a>
-          </div>
-        </form>
+              <div className="flex gap-3">
+                <Button
+                  type="submit"
+                  className="flex-1"
+                  disabled={loading}
+                >
+                  {loading ? 'Menyimpan...' : 'Simpan'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => router.push('/admin')}
+                >
+                  Batal
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

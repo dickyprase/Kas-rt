@@ -3,6 +3,17 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import ThemeToggle from '../components/ThemeToggle';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Separator } from '@/components/ui/separator';
+import { Plus, MoreHorizontal, Pencil, Trash2, LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
 
 function formatCurrency(amount: number): string {
   return new Intl.NumberFormat('id-ID', {
@@ -46,6 +57,7 @@ export default function AdminClient({
   const [transDate, setTransDate] = useState(new Date().toISOString().split('T')[0]);
   const [loading, setLoading] = useState(false);
   const [filterType, setFilterType] = useState(kasTypeFilter);
+  const [deleteId, setDeleteId] = useState<number | null>(null);
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
@@ -64,9 +76,11 @@ export default function AdminClient({
   }
 
   async function handleDelete(id: number) {
-    if (!confirm('Yakin hapus transaksi ini?')) return;
     const res = await fetch(`/api/transactions?id=${id}`, { method: 'DELETE' });
-    if (res.ok) router.refresh();
+    if (res.ok) {
+      setDeleteId(null);
+      router.refresh();
+    }
   }
 
   async function handleLogout() {
@@ -88,195 +102,245 @@ export default function AdminClient({
   }
 
   return (
-    <div className="min-h-screen bg-[--background] p-4 md:p-8">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-background p-4 md:p-8">
+      <div className="mx-auto max-w-5xl space-y-6">
         {/* Header */}
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-xl font-bold">⚙️ Admin Panel</h1>
-          <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">⚙️ Admin Panel</h1>
+            <p className="text-sm text-muted-foreground">Kelola transaksi kas</p>
+          </div>
+          <div className="flex items-center gap-2">
             <ThemeToggle />
-            <span className="text-sm text-[--muted-text]">{username}</span>
-            <button onClick={handleLogout} className="text-sm text-red-400 hover:text-red-300">Logout</button>
+            <Badge variant="secondary">{username}</Badge>
+            <Button variant="ghost" size="sm" onClick={handleLogout}>
+              <LogOut className="size-4" />
+              Logout
+            </Button>
           </div>
         </div>
+
+        <Separator />
 
         {/* Add Transaction Form */}
-        <form onSubmit={handleAdd} className="bg-[--card-bg] rounded-xl p-4 border border-[--card-border] mb-6">
-          <h2 className="font-semibold mb-3">Tambah Transaksi</h2>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Plus className="size-4" />
+              Tambah Transaksi
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleAdd} className="space-y-4">
+              {/* Kas Type Tabs */}
+              <div className="space-y-2">
+                <Label>Jenis Kas</Label>
+                <Tabs value={kasType} onValueChange={(v) => setKasType(v as 'biasa' | 'koperasi')}>
+                  <TabsList className="w-full">
+                    <TabsTrigger value="biasa" className="flex-1">💰 Kas Biasa</TabsTrigger>
+                    <TabsTrigger value="koperasi" className="flex-1">🏛️ Kas Koperasi</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </div>
 
-          {/* Kas Type Toggle */}
-          <div className="flex gap-2 mb-3">
-            <button
-              type="button"
-              onClick={() => setKasType('biasa')}
-              className={`flex-1 py-2 rounded-lg font-medium transition ${
-                kasType === 'biasa'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-[--input-bg] text-[--muted-text] border border-[--input-border]'
-              }`}
-            >
-              💰 Kas Biasa
-            </button>
-            <button
-              type="button"
-              onClick={() => setKasType('koperasi')}
-              className={`flex-1 py-2 rounded-lg font-medium transition ${
-                kasType === 'koperasi'
-                  ? 'bg-purple-600 text-white'
-                  : 'bg-[--input-bg] text-[--muted-text] border border-[--input-border]'
-              }`}
-            >
-              🏛️ Kas Koperasi
-            </button>
-          </div>
+              {/* Type Tabs */}
+              <div className="space-y-2">
+                <Label>Tipe Transaksi</Label>
+                <Tabs value={type} onValueChange={(v) => setType(v as 'pemasukan' | 'pengeluaran')}>
+                  <TabsList className="w-full">
+                    <TabsTrigger value="pemasukan" className="flex-1">💚 Pemasukan</TabsTrigger>
+                    <TabsTrigger value="pengeluaran" className="flex-1">❤️ Pengeluaran</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </div>
 
-          {/* Type Toggle (pemasukan/pengeluaran) */}
-          <div className="flex gap-2 mb-3">
-            <button
-              type="button"
-              onClick={() => setType('pemasukan')}
-              className={`flex-1 py-2 rounded-lg font-medium transition ${type === 'pemasukan' ? 'bg-green-600 text-white' : 'bg-[--input-bg] text-[--muted-text] border border-[--input-border]'}`}
-            >
-              Pemasukan
-            </button>
-            <button
-              type="button"
-              onClick={() => setType('pengeluaran')}
-              className={`flex-1 py-2 rounded-lg font-medium transition ${type === 'pengeluaran' ? 'bg-red-600 text-white' : 'bg-[--input-bg] text-[--muted-text] border border-[--input-border]'}`}
-            >
-              Pengeluaran
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
-            <input
-              type="number"
-              placeholder="Jumlah"
-              value={amount}
-              onChange={e => setAmount(e.target.value)}
-              className="bg-[--input-bg] rounded-lg px-4 py-2 border border-[--input-border] focus:border-blue-500 focus:outline-none text-[--foreground]"
-              required
-              min="1"
-            />
-            <input
-              type="text"
-              placeholder="Keterangan"
-              value={description}
-              onChange={e => setDescription(e.target.value)}
-              className="bg-[--input-bg] rounded-lg px-4 py-2 border border-[--input-border] focus:border-blue-500 focus:outline-none text-[--foreground]"
-              required
-            />
-            <input
-              type="date"
-              value={transDate}
-              onChange={e => setTransDate(e.target.value)}
-              className="bg-[--input-bg] rounded-lg px-4 py-2 border border-[--input-border] focus:border-blue-500 focus:outline-none text-[--foreground]"
-              required
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className={`w-full py-2 rounded-lg font-medium transition ${type === 'pemasukan' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'} disabled:opacity-50`}
-          >
-            {loading ? 'Menyimpan...' : 'Simpan'}
-          </button>
-        </form>
-
-        {/* Kas Type Filter */}
-        <div className="flex gap-2 mb-4 bg-[--card-bg] rounded-xl p-1 border border-[--card-border]">
-          <button
-            onClick={() => handleFilterChange('')}
-            className={`flex-1 py-2 rounded-lg font-medium transition text-sm ${
-              !filterType
-                ? 'bg-blue-600 text-white shadow-md'
-                : 'text-[--muted-text] hover:bg-[--card-bg-secondary]'
-            }`}
-          >
-            📊 Semua
-          </button>
-          <button
-            onClick={() => handleFilterChange('biasa')}
-            className={`flex-1 py-2 rounded-lg font-medium transition text-sm ${
-              filterType === 'biasa'
-                ? 'bg-blue-600 text-white shadow-md'
-                : 'text-[--muted-text] hover:bg-[--card-bg-secondary]'
-            }`}
-          >
-            💰 Kas Biasa
-          </button>
-          <button
-            onClick={() => handleFilterChange('koperasi')}
-            className={`flex-1 py-2 rounded-lg font-medium transition text-sm ${
-              filterType === 'koperasi'
-                ? 'bg-purple-600 text-white shadow-md'
-                : 'text-[--muted-text] hover:bg-[--card-bg-secondary]'
-            }`}
-          >
-            🏛️ Kas Koperasi
-          </button>
-        </div>
-
-        {/* Transaction List */}
-        <div className="bg-[--card-bg] rounded-xl border border-[--card-border] overflow-hidden">
-          <div className="p-4 border-b border-[--card-border] flex justify-between items-center">
-            <h2 className="font-semibold">Riwayat Transaksi</h2>
-            <span className="text-sm text-[--muted-text]">{total} total</span>
-          </div>
-          <div className="divide-y divide-[--divider]">
-            {transactions.length === 0 && (
-              <p className="p-4 text-[--muted-text] text-center">Belum ada transaksi</p>
-            )}
-            {transactions.map((t) => (
-              <div key={t.id} className="p-4 flex justify-between items-center">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className="font-medium">{t.description}</p>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${
-                      t.kas_type === 'koperasi'
-                        ? 'bg-purple-900 text-purple-300'
-                        : 'bg-blue-900 text-blue-300'
-                    }`}>
-                      {t.kas_type === 'koperasi' ? '🏛️ Koperasi' : '💰 Biasa'}
-                    </span>
-                  </div>
-                  <p className="text-xs text-[--muted-text]">{t.trans_date}</p>
+              {/* Form Fields */}
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                <div className="space-y-2">
+                  <Label htmlFor="amount">Jumlah</Label>
+                  <Input
+                    id="amount"
+                    type="number"
+                    placeholder="0"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    required
+                    min="1"
+                  />
                 </div>
-                <div className="flex items-center gap-3">
-                  <p className={`font-bold ${t.type === 'pemasukan' ? 'text-green-400' : 'text-red-400'}`}>
-                    {t.type === 'pemasukan' ? '+' : '-'}{formatCurrency(t.amount)}
-                  </p>
-                  <a href={`/admin/edit/${t.id}`} className="text-blue-400 hover:text-blue-300">✏️</a>
-                  <button onClick={() => handleDelete(t.id)} className="text-red-400 hover:text-red-300">🗑️</button>
+                <div className="space-y-2">
+                  <Label htmlFor="description">Keterangan</Label>
+                  <Input
+                    id="description"
+                    type="text"
+                    placeholder="Deskripsi transaksi"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="transDate">Tanggal</Label>
+                  <Input
+                    id="transDate"
+                    type="date"
+                    value={transDate}
+                    onChange={(e) => setTransDate(e.target.value)}
+                    required
+                  />
                 </div>
               </div>
-            ))}
-          </div>
 
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="p-4 border-t border-[--card-border] flex justify-between items-center">
-              <a
-                href={page > 1 ? getPaginationUrl(page - 1) : '#'}
-                className={`px-4 py-2 rounded-lg text-sm ${page > 1 ? 'bg-[--input-bg] hover:bg-[--card-bg-secondary] border border-[--input-border]' : 'bg-[--input-bg] opacity-50 cursor-not-allowed'}`}
+              <Button
+                type="submit"
+                className="w-full"
+                variant={type === 'pemasukan' ? 'default' : 'destructive'}
+                disabled={loading}
               >
-                Prev
-              </a>
-              <span className="text-sm text-[--muted-text]">Halaman {page} dari {totalPages}</span>
-              <a
-                href={page < totalPages ? getPaginationUrl(page + 1) : '#'}
-                className={`px-4 py-2 rounded-lg text-sm ${page < totalPages ? 'bg-[--input-bg] hover:bg-[--card-bg-secondary] border border-[--input-border]' : 'bg-[--input-bg] opacity-50 cursor-not-allowed'}`}
-              >
-                Next
-              </a>
+                {loading ? 'Menyimpan...' : 'Simpan Transaksi'}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
+        {/* Kas Type Filter */}
+        <Tabs value={filterType || 'all'} onValueChange={(v) => handleFilterChange(v === 'all' ? '' : v)}>
+          <TabsList className="w-full">
+            <TabsTrigger value="all" className="flex-1">📊 Semua</TabsTrigger>
+            <TabsTrigger value="biasa" className="flex-1">💰 Kas Biasa</TabsTrigger>
+            <TabsTrigger value="koperasi" className="flex-1">🏛️ Kas Koperasi</TabsTrigger>
+          </TabsList>
+        </Tabs>
+
+        {/* Transaction List */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Riwayat Transaksi</CardTitle>
+              <Badge variant="secondary">{total} total</Badge>
             </div>
-          )}
+          </CardHeader>
+          <CardContent>
+            {transactions.length === 0 ? (
+              <p className="py-8 text-center text-muted-foreground">Belum ada transaksi</p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Keterangan</TableHead>
+                    <TableHead className="w-[120px]">Jenis Kas</TableHead>
+                    <TableHead className="w-[100px]">Tanggal</TableHead>
+                    <TableHead className="w-[150px] text-right">Jumlah</TableHead>
+                    <TableHead className="w-[50px]"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {transactions.map((t) => (
+                    <TableRow key={t.id}>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-2">
+                          <Badge variant={t.type === 'pemasukan' ? 'default' : 'destructive'} className="text-[10px]">
+                            {t.type === 'pemasukan' ? 'Masuk' : 'Keluar'}
+                          </Badge>
+                          {t.description}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={t.kas_type === 'koperasi' ? 'secondary' : 'outline'}>
+                          {t.kas_type === 'koperasi' ? '🏛️ Koperasi' : '💰 Biasa'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{t.trans_date}</TableCell>
+                      <TableCell className="text-right">
+                        <span className={`font-bold tabular-nums ${
+                          t.type === 'pemasukan' ? 'text-emerald-500' : 'text-destructive'
+                        }`}>
+                          {t.type === 'pemasukan' ? '+' : '-'}{formatCurrency(t.amount)}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" />}>
+                            <MoreHorizontal className="size-4" />
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => router.push(`/admin/edit/${t.id}`)}>
+                              <Pencil className="size-4" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              variant="destructive"
+                              onClick={() => setDeleteId(t.id)}
+                            >
+                              <Trash2 className="size-4" />
+                              Hapus
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="mt-4 flex items-center justify-between">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page <= 1}
+                  onClick={() => router.push(getPaginationUrl(page - 1))}
+                >
+                  <ChevronLeft className="size-4" />
+                  Prev
+                </Button>
+                <span className="text-sm text-muted-foreground">
+                  Halaman {page} dari {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page >= totalPages}
+                  onClick={() => router.push(getPaginationUrl(page + 1))}
+                >
+                  Next
+                  <ChevronRight className="size-4" />
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <div className="text-center">
+          <a href="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            ← Kembali ke Dashboard
+          </a>
         </div>
 
-        <div className="text-center mt-6">
-          <a href="/" className="text-sm text-[--muted-text] hover:text-[--foreground]">← Kembali ke Dashboard</a>
-        </div>
+        {/* Delete Confirmation Dialog */}
+        <Dialog open={deleteId !== null} onOpenChange={(open) => { if (!open) setDeleteId(null); }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Hapus Transaksi</DialogTitle>
+              <DialogDescription>
+                Yakin hapus transaksi ini? Tindakan ini tidak dapat dibatalkan.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <DialogClose render={<Button variant="outline" />}>
+                Batal
+              </DialogClose>
+              <Button
+                variant="destructive"
+                onClick={() => deleteId !== null && handleDelete(deleteId)}
+              >
+                Hapus
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

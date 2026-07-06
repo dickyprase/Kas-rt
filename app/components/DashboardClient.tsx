@@ -2,6 +2,12 @@
 
 import { useState } from 'react';
 import ThemeToggle from './ThemeToggle';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Separator } from '@/components/ui/separator';
+import { TrendingUp, TrendingDown, Wallet, Calendar, CalendarDays, ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
 
 function formatCurrency(amount: number): string {
   return new Intl.NumberFormat('id-ID', {
@@ -32,6 +38,33 @@ interface DataByType {
   transactions: Transaction[];
 }
 
+function SummaryCard({ label, value, icon: Icon, variant }: {
+  label: string;
+  value: number;
+  icon: React.ElementType;
+  variant: 'income' | 'expense';
+}) {
+  return (
+    <Card>
+      <CardContent className="flex items-center gap-3">
+        <div className={`flex size-10 items-center justify-center rounded-lg ${
+          variant === 'income' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-destructive/10 text-destructive'
+        }`}>
+          <Icon className="size-5" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-xs text-muted-foreground truncate">{label}</p>
+          <p className={`text-sm font-bold tabular-nums ${
+            variant === 'income' ? 'text-emerald-500' : 'text-destructive'
+          }`}>
+            {formatCurrency(value)}
+          </p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function DashboardClient({
   allData,
   biasaData,
@@ -41,122 +74,125 @@ export default function DashboardClient({
   biasaData: DataByType;
   koperasiData: DataByType;
 }) {
-  const [activeTab, setActiveTab] = useState<'semua' | 'biasa' | 'koperasi'>('semua');
+  const [activeTab, setActiveTab] = useState('semua');
 
-  const data = activeTab === 'semua' ? allData : activeTab === 'biasa' ? biasaData : koperasiData;
-
-  const tabs = [
-    { key: 'semua' as const, label: '📊 Semua', emoji: '📊' },
-    { key: 'biasa' as const, label: '💰 Kas Biasa', emoji: '💰' },
-    { key: 'koperasi' as const, label: '🏛️ Kas Koperasi', emoji: '🏛️' },
-  ];
+  const dataMap: Record<string, DataByType> = {
+    semua: allData,
+    biasa: biasaData,
+    koperasi: koperasiData,
+  };
+  const data = dataMap[activeTab];
 
   return (
-    <div className="min-h-screen bg-[--background] p-4 md:p-8">
+    <div className="min-h-screen bg-background p-4 md:p-8">
       <meta httpEquiv="refresh" content="30" />
-      <div className="max-w-4xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-center flex-1">📊 Kas</h1>
+      <div className="mx-auto max-w-4xl space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">📊 Kas</h1>
+            <p className="text-sm text-muted-foreground">Dashboard Keuangan</p>
+          </div>
           <ThemeToggle />
         </div>
 
-        {/* Kas Type Tabs */}
-        <div className="flex gap-2 mb-6 bg-[--card-bg] rounded-xl p-1 border border-[--card-border]">
-          {tabs.map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`flex-1 py-2.5 rounded-lg font-medium transition text-sm ${
-                activeTab === tab.key
-                  ? 'bg-blue-600 text-white shadow-md'
-                  : 'text-[--muted-text] hover:bg-[--card-bg-secondary]'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+        <Separator />
 
-        {/* Saldo */}
-        <div className={`text-center p-6 rounded-2xl mb-6 ${
-          data.saldo >= 0
-            ? 'bg-green-950 border border-green-800 dark:bg-green-950 dark:border-green-800'
-            : 'bg-red-950 border border-red-800 dark:bg-red-950 dark:border-red-800'
-        }`}>
-          <p className="text-[--muted-text] text-sm mb-1">Saldo</p>
-          <p className={`text-4xl md:text-5xl font-bold ${data.saldo >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-            {formatCurrency(data.saldo)}
-          </p>
-        </div>
+        {/* Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="w-full">
+            <TabsTrigger value="semua" className="flex-1">📊 Semua</TabsTrigger>
+            <TabsTrigger value="biasa" className="flex-1">💰 Kas Biasa</TabsTrigger>
+            <TabsTrigger value="koperasi" className="flex-1">🏛️ Kas Koperasi</TabsTrigger>
+          </TabsList>
 
-        {/* Summary Cards */}
-        <div className="grid grid-cols-2 gap-3 mb-6">
-          <div className="bg-[--card-bg] rounded-xl p-4 border border-[--card-border]">
-            <p className="text-xs text-[--muted-text]">Pemasukan Hari Ini</p>
-            <p className="text-lg font-bold text-green-400">{formatCurrency(data.todayIncome)}</p>
-          </div>
-          <div className="bg-[--card-bg] rounded-xl p-4 border border-[--card-border]">
-            <p className="text-xs text-[--muted-text]">Pengeluaran Hari Ini</p>
-            <p className="text-lg font-bold text-red-400">{formatCurrency(data.todayExpense)}</p>
-          </div>
-          <div className="bg-[--card-bg] rounded-xl p-4 border border-[--card-border]">
-            <p className="text-xs text-[--muted-text]">Pemasukan Bulan Ini</p>
-            <p className="text-lg font-bold text-green-400">{formatCurrency(data.monthIncome)}</p>
-          </div>
-          <div className="bg-[--card-bg] rounded-xl p-4 border border-[--card-border]">
-            <p className="text-xs text-[--muted-text]">Pengeluaran Bulan Ini</p>
-            <p className="text-lg font-bold text-red-400">{formatCurrency(data.monthExpense)}</p>
-          </div>
-        </div>
+          {(['semua', 'biasa', 'koperasi'] as const).map((tab) => (
+            <TabsContent key={tab} value={tab} className="space-y-6">
+              {/* Saldo */}
+              <Card className={data.saldo >= 0
+                ? 'border-emerald-500/20 bg-emerald-500/5'
+                : 'border-destructive/20 bg-destructive/5'
+              }>
+                <CardContent className="flex flex-col items-center gap-1 py-6">
+                  <p className="text-sm text-muted-foreground">Saldo</p>
+                  <p className={`bg-gradient-to-r bg-clip-text text-4xl font-bold tabular-nums md:text-5xl ${
+                    data.saldo >= 0
+                      ? 'from-emerald-400 to-emerald-600 text-emerald-500'
+                      : 'from-red-400 to-red-600 text-destructive'
+                  }`}>
+                    {formatCurrency(data.saldo)}
+                  </p>
+                </CardContent>
+              </Card>
 
-        {/* Total */}
-        <div className="grid grid-cols-2 gap-3 mb-6">
-          <div className="bg-[--card-bg] rounded-xl p-4 border border-[--card-border]">
-            <p className="text-xs text-[--muted-text]">Total Pemasukan</p>
-            <p className="text-xl font-bold text-green-400">{formatCurrency(data.totalPemasukan)}</p>
-          </div>
-          <div className="bg-[--card-bg] rounded-xl p-4 border border-[--card-border]">
-            <p className="text-xs text-[--muted-text]">Total Pengeluaran</p>
-            <p className="text-xl font-bold text-red-400">{formatCurrency(data.totalPengeluaran)}</p>
-          </div>
-        </div>
-
-        {/* Last 10 Transactions */}
-        <div className="bg-[--card-bg] rounded-xl border border-[--card-border] overflow-hidden">
-          <div className="p-4 border-b border-[--card-border]">
-            <h2 className="font-semibold">10 Transaksi Terakhir</h2>
-          </div>
-          <div className="divide-y divide-[--divider]">
-            {data.transactions.length === 0 && (
-              <p className="p-4 text-[--muted-text] text-center">Belum ada transaksi</p>
-            )}
-            {data.transactions.map((t) => (
-              <div key={t.id} className="p-4 flex justify-between items-center">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className="font-medium">{t.description}</p>
-                    {activeTab === 'semua' && (
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${
-                        t.kas_type === 'koperasi'
-                          ? 'bg-purple-900 text-purple-300 dark:bg-purple-900 dark:text-purple-300'
-                          : 'bg-blue-900 text-blue-300 dark:bg-blue-900 dark:text-blue-300'
-                      }`}>
-                        {t.kas_type === 'koperasi' ? '🏛️' : '💰'}
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xs text-[--muted-text]">{t.trans_date}</p>
-                </div>
-                <p className={`font-bold ${t.type === 'pemasukan' ? 'text-green-400' : 'text-red-400'}`}>
-                  {t.type === 'pemasukan' ? '+' : '-'}{formatCurrency(t.amount)}
-                </p>
+              {/* Summary Cards */}
+              <div className="grid grid-cols-2 gap-3">
+                <SummaryCard label="Pemasukan Hari Ini" value={data.todayIncome} icon={TrendingUp} variant="income" />
+                <SummaryCard label="Pengeluaran Hari Ini" value={data.todayExpense} icon={TrendingDown} variant="expense" />
+                <SummaryCard label="Pemasukan Bulan Ini" value={data.monthIncome} icon={Calendar} variant="income" />
+                <SummaryCard label="Pengeluaran Bulan Ini" value={data.monthExpense} icon={CalendarDays} variant="expense" />
               </div>
-            ))}
-          </div>
-        </div>
 
-        <div className="text-center mt-6">
-          <a href="/login" className="text-sm text-[--muted-text] hover:text-[--foreground]">Admin Login</a>
+              {/* Total */}
+              <div className="grid grid-cols-2 gap-3">
+                <SummaryCard label="Total Pemasukan" value={data.totalPemasukan} icon={ArrowUpCircle} variant="income" />
+                <SummaryCard label="Total Pengeluaran" value={data.totalPengeluaran} icon={ArrowDownCircle} variant="expense" />
+              </div>
+
+              <Separator />
+
+              {/* Transactions Table */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>10 Transaksi Terakhir</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {data.transactions.length === 0 ? (
+                    <p className="py-8 text-center text-muted-foreground">Belum ada transaksi</p>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Keterangan</TableHead>
+                          {activeTab === 'semua' && <TableHead className="w-[100px]">Jenis</TableHead>}
+                          <TableHead className="w-[100px]">Tanggal</TableHead>
+                          <TableHead className="w-[150px] text-right">Jumlah</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {data.transactions.map((t) => (
+                          <TableRow key={t.id}>
+                            <TableCell className="font-medium">{t.description}</TableCell>
+                            {activeTab === 'semua' && (
+                              <TableCell>
+                                <Badge variant={t.kas_type === 'koperasi' ? 'secondary' : 'outline'}>
+                                  {t.kas_type === 'koperasi' ? '🏛️ Koperasi' : '💰 Biasa'}
+                                </Badge>
+                              </TableCell>
+                            )}
+                            <TableCell className="text-muted-foreground">{t.trans_date}</TableCell>
+                            <TableCell className="text-right">
+                              <span className={`font-bold tabular-nums ${
+                                t.type === 'pemasukan' ? 'text-emerald-500' : 'text-destructive'
+                              }`}>
+                                {t.type === 'pemasukan' ? '+' : '-'}{formatCurrency(t.amount)}
+                              </span>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          ))}
+        </Tabs>
+
+        <div className="text-center">
+          <a href="/login" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            Admin Login
+          </a>
         </div>
       </div>
     </div>
