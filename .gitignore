@@ -1,0 +1,9 @@
+node_modules/
+.next/
+.env
+.env.local
+kas.db
+kas.db-wal
+kas.db-shm
+*.tsbuildinfo
+next-env.d.ts
