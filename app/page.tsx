@@ -12,6 +12,8 @@ import {
 } from '@/components/ui/table';
 import { TrendingUp, TrendingDown, Wallet, Activity } from 'lucide-react';
 import Link from 'next/link';
+import { format } from 'date-fns';
+import { id as localeId } from 'date-fns/locale';
 
 export const dynamic = 'force-dynamic';
 
@@ -220,7 +222,7 @@ export default async function PublicPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-muted-foreground">
-                        {t.trans_date}
+                        {format(new Date(t.trans_date), "dd MMM yyyy", { locale: localeId })}
                       </TableCell>
                       <TableCell className="text-right">
                         <span
