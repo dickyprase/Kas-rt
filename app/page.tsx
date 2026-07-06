@@ -14,18 +14,18 @@ interface DataByType {
   transactions: any[];
 }
 
-async function fetchKasData(kasTypeFilter: string, kasTypeParams: any[]): Promise<DataByType> {
-  const typeCondition = kasTypeFilter;
-  const params = kasTypeParams;
+async function fetchKasData(kasType: string | null): Promise<DataByType> {
+  const kasParam = kasType ? [kasType] : [];
+  const kasFilter = kasType ? 'AND kas_type=$1' : '';
 
   const totalPemasukan = (await db.query(
-    `SELECT COALESCE(SUM(amount),0) as total FROM transactions WHERE type='pemasukan' ${typeCondition}`,
-    params
+    `SELECT COALESCE(SUM(amount),0) as total FROM transactions WHERE type='pemasukan' ${kasFilter}`,
+    kasParam
   )).rows[0].total;
 
   const totalPengeluaran = (await db.query(
-    `SELECT COALESCE(SUM(amount),0) as total FROM transactions WHERE type='pengeluaran' ${typeCondition}`,
-    params
+    `SELECT COALESCE(SUM(amount),0) as total FROM transactions WHERE type='pengeluaran' ${kasFilter}`,
+    kasParam
   )).rows[0].total;
 
   const saldo = totalPemasukan - totalPengeluaran;
@@ -34,29 +34,35 @@ async function fetchKasData(kasTypeFilter: string, kasTypeParams: any[]): Promis
   const today = now.toISOString().split('T')[0];
   const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
 
+  // For queries with trans_date + kas_type, kas_type is $2
+  const todayParams = kasType ? [today, kasType] : [today];
+  const todayKasFilter = kasType ? 'AND kas_type=$2' : '';
+
   const todayIncome = (await db.query(
-    `SELECT COALESCE(SUM(amount),0) as total FROM transactions WHERE type='pemasukan' AND trans_date=$1 ${typeCondition}`,
-    [today, ...params]
+    `SELECT COALESCE(SUM(amount),0) as total FROM transactions WHERE type='pemasukan' AND trans_date::date=$1 ${todayKasFilter}`,
+    todayParams
   )).rows[0].total;
 
   const todayExpense = (await db.query(
-    `SELECT COALESCE(SUM(amount),0) as total FROM transactions WHERE type='pengeluaran' AND trans_date=$1 ${typeCondition}`,
-    [today, ...params]
+    `SELECT COALESCE(SUM(amount),0) as total FROM transactions WHERE type='pengeluaran' AND trans_date::date=$1 ${todayKasFilter}`,
+    todayParams
   )).rows[0].total;
 
+  const monthParams = kasType ? [monthStart, kasType] : [monthStart];
+
   const monthIncome = (await db.query(
-    `SELECT COALESCE(SUM(amount),0) as total FROM transactions WHERE type='pemasukan' AND trans_date>=$1 ${typeCondition}`,
-    [monthStart, ...params]
+    `SELECT COALESCE(SUM(amount),0) as total FROM transactions WHERE type='pemasukan' AND trans_date::date>=$1 ${todayKasFilter}`,
+    monthParams
   )).rows[0].total;
 
   const monthExpense = (await db.query(
-    `SELECT COALESCE(SUM(amount),0) as total FROM transactions WHERE type='pengeluaran' AND trans_date>=$1 ${typeCondition}`,
-    [monthStart, ...params]
+    `SELECT COALESCE(SUM(amount),0) as total FROM transactions WHERE type='pengeluaran' AND trans_date::date>=$1 ${todayKasFilter}`,
+    monthParams
   )).rows[0].total;
 
   const transactions = (await db.query(
-    `SELECT * FROM transactions WHERE 1=1 ${typeCondition} ORDER BY trans_date DESC, created_at DESC LIMIT 10`,
-    params
+    `SELECT * FROM transactions WHERE 1=1 ${kasFilter} ORDER BY trans_date DESC, created_at DESC LIMIT 10`,
+    kasParam
   )).rows;
 
   return {
@@ -73,9 +79,9 @@ async function fetchKasData(kasTypeFilter: string, kasTypeParams: any[]): Promis
 
 export default async function Home() {
   const [allData, biasaData, koperasiData] = await Promise.all([
-    fetchKasData('', []),
-    fetchKasData('AND kas_type=$1', ['biasa']),
-    fetchKasData('AND kas_type=$1', ['koperasi']),
+    fetchKasData(null),
+    fetchKasData('biasa'),
+    fetchKasData('koperasi'),
   ]);
 
   return (
