@@ -6,6 +6,11 @@ let cachedToken: { token: string; expires: number } | null = null;
 let spreadsheetId: string = '';
 
 function getCredentials() {
+  // Try env var first (for Vercel/serverless)
+  if (process.env.GOOGLE_CREDENTIALS) {
+    return JSON.parse(process.env.GOOGLE_CREDENTIALS);
+  }
+  // Fallback to file (for local dev)
   const credPath = path.join(process.cwd(), 'credentials.json');
   if (!fs.existsSync(credPath)) return null;
   return JSON.parse(fs.readFileSync(credPath, 'utf-8'));
