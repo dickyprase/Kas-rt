@@ -1,19 +1,9 @@
 import db from '@/lib/db';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { TrendingUp, TrendingDown, Wallet, Activity } from 'lucide-react';
+import { TrendingUp, TrendingDown, Activity } from 'lucide-react';
 import Link from 'next/link';
-import { format } from 'date-fns';
-import { id as localeId } from 'date-fns/locale';
+import TransactionHistory from '@/components/transaction-history';
 
 export const dynamic = 'force-dynamic';
 
@@ -66,11 +56,6 @@ export default async function PublicPage() {
     getKasData('biasa'),
     getKasData('koperasi'),
   ]);
-
-  // 5 transaksi terbaru
-  const { rows: recentTransactions } = await db.query(
-    'SELECT * FROM transactions ORDER BY trans_date DESC, created_at DESC LIMIT 5'
-  );
 
   return (
     <div className="min-h-screen bg-background">
@@ -168,63 +153,8 @@ export default async function PublicPage() {
           </Card>
         </div>
 
-        {/* Recent Transactions */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl">5 Transaksi Terbaru</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {recentTransactions.length === 0 ? (
-              <p className="py-8 text-center text-lg text-muted-foreground">
-                Belum ada transaksi
-              </p>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Keterangan</TableHead>
-                    <TableHead className="w-[100px]">Jenis</TableHead>
-                    <TableHead className="w-[100px]">Tanggal</TableHead>
-                    <TableHead className="w-[150px] text-right">Jumlah</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {recentTransactions.map((t: any) => (
-                    <TableRow key={t.id}>
-                      <TableCell className="font-medium text-lg">
-                        {t.description}
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={
-                            t.kas_type === 'koperasi' ? 'secondary' : 'outline'
-                          }
-                        >
-                          {t.kas_type === 'koperasi' ? '🏦 Koperasi' : '🪙 Biasa'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-xl text-muted-foreground">
-                        {format(new Date(t.trans_date), "dd MMM yyyy", { locale: localeId })}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <span
-                          className={`font-bold tabular-nums ${
-                            t.type === 'pemasukan'
-                              ? 'text-emerald-500'
-                              : 'text-rose-500'
-                          }`}
-                        >
-                          {t.type === 'pemasukan' ? '+' : '-'}
-                          {formatCurrency(Number(t.amount))}
-                        </span>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
+        {/* Transaction History */}
+        <TransactionHistory />
 
         {/* Footer */}
         <div className="text-center text-xl text-muted-foreground">

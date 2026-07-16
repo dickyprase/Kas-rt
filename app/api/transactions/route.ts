@@ -92,6 +92,30 @@ async function sendTelegramBackup() {
   }
 }
 
+// GET - public paginated transactions
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const page = Math.max(1, parseInt(searchParams.get('page') || '1'));
+  const limit = Math.min(50, Math.max(1, parseInt(searchParams.get('limit') || '10')));
+  const offset = (page - 1) * limit;
+
+  const countRes = await db.query('SELECT COUNT(*) as total FROM transactions');
+  const total = parseInt(countRes.rows[0].total);
+
+  const { rows } = await db.query(
+    'SELECT * FROM transactions ORDER BY trans_date DESC, created_at DESC LIMIT $1 OFFSET $2',
+    [limit, offset]
+  );
+
+  return NextResponse.json({
+    transactions: rows,
+    total,
+    page,
+    limit,
+    totalPages: Math.ceil(total / limit),
+  });
+}
+
 // POST - create transaction
 export async function POST(request: Request) {
   const session = await getSession();
